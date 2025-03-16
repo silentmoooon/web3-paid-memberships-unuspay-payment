@@ -317,6 +317,6 @@ body {
     fill: #fff;
 }
 
-.aurpay-usage-notice__dismiss:before {
+.unuspay-usage-notice__dismiss:before {
     color: white;
 }

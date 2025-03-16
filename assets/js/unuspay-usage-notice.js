@@ -1,6 +1,6 @@
 ( function ( $ ) {
-	var connectionBanner = $( '.aurpay-usage-notice' ),
-		connectionBannerDismiss = $( '.aurpay-usage-notice__dismiss' );
+	var connectionBanner = $( '.unuspay-usage-notice' ),
+		connectionBannerDismiss = $( '.unuspay-usage-notice__dismiss' );
 
 	// Dismiss the connection banner via AJAX
 	connectionBannerDismiss.on( 'click', function () {

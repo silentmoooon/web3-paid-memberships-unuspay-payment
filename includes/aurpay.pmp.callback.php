@@ -5,12 +5,12 @@ if (!defined('ABSPATH')) exit;
 if (isset($_GET["platform"]) && ($_GET["platform"] == "AURPAY") && isset($_GET["type"]) && ($_GET["type"] == "AURPAYPMP"))
 {
 
-    if (isset($_GET["status"]) && isset($_GET["order_id"]) && isset($_GET["aurpay_order_id"]))
+    if (isset($_GET["status"]) && isset($_GET["order_id"]) && isset($_GET["unuspay_order_id"]))
     {
         $data = [];
         $status = sanitize_text_field($_GET["status"]);
         $order_id = sanitize_text_field($_GET["order_id"]);
-        $aurpay_order_id = sanitize_text_field($_GET["aurpay_order_id"]);
+        $unuspay_order_id = sanitize_text_field($_GET["unuspay_order_id"]);
 
         if ($status == "completed")
         {
@@ -65,12 +65,12 @@ if (isset($_GET["platform"]) && ($_GET["platform"] == "AURPAY") && isset($_GET["
 
             $order->membership_id = $pmpro_level->id;
             $order->status = 'success';
-            $order->payment_transaction_id = $aurpay_order_id;
+            $order->payment_transaction_id = $unuspay_order_id;
             $order->saveOrder();
 
             $data['code'] = 200;
             $data['result'] = 1;
-            $data['message'] = '[Aurpay PMP] Success! Order Payment status already updated.';
+            $data['message'] = '[Unuspay PMP] Success! Order Payment status already updated.';
 
             status_header(200);
             header('Content-Type: application/json; charset=utf-8');
@@ -81,7 +81,7 @@ if (isset($_GET["platform"]) && ($_GET["platform"] == "AURPAY") && isset($_GET["
         {
             $data['code'] = 500;
             $data['result'] = 0;
-            $data['message'] = '[Aurpay PMP] Failed: Order status is incorrect.';
+            $data['message'] = '[Unuspay PMP] Failed: Order status is incorrect.';
 
             status_header(500);
             header('Content-Type: application/json; charset=utf-8');
@@ -93,7 +93,7 @@ if (isset($_GET["platform"]) && ($_GET["platform"] == "AURPAY") && isset($_GET["
     {
         $data['code'] = 500;
         $data['result'] = 0;
-        $data['message'] = '[Aurpay PMP] Failed: status, order_id and type didn\'t exist';
+        $data['message'] = '[Unuspay PMP] Failed: status, order_id and type didn\'t exist';
 
         status_header(500);
         header('Content-Type: application/json; charset=utf-8');
