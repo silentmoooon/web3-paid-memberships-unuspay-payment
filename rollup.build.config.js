@@ -8,7 +8,6 @@ import { terser } from "rollup-plugin-terser"
 
 const files = [
   'src/checkout.js',
-  'src/block.js',
   'src/widgets.bundle.js', // only build if necessary
 ]
 

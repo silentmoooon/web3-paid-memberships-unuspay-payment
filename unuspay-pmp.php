@@ -82,9 +82,9 @@ if (!function_exists('unuspay_pmp_gateway_load'))
 
         add_filter('plugin_action_links', array('PMProGateway_unuspay', 'plugin_action_links'), 10, 2);
 
-        //add_filter('pmpro_get_gateway', array('PMProGateway_unuspay', 'select_gateway'), 10, 1);
+        add_filter('pmpro_get_gateway', array('PMProGateway_unuspay', 'select_gateway'), 10, 1);
 
-        //add_filter('pmpro_valid_gateways', array('PMProGateway_unuspay', 'valid_gateway'), 10, 1);
+        add_filter('pmpro_valid_gateways', array('PMProGateway_unuspay', 'valid_gateway'), 10, 1);
 
         add_action('pmpro_checkout_boxes', array('PMProGateway_unuspay', 'checkout_boxes'));
 
