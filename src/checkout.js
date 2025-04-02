@@ -16,7 +16,7 @@ jQuery(function ($) {
     $("form.pmpro_form").on("submit", async () => {
         var values = $("form.pmpro_form").serialize();
         if (values.match("pmpro_checkout_gateway=pmp_unuspay_gateway")) {
-            let { unmount } = await DePayWidgets.Loading({
+            let { unmount } = await UnusPayWidgets.Loading({
                 text: "Loading payment data...",
             });
             setTimeout(unmount, 10000);
@@ -60,40 +60,16 @@ const displayCheckout = async () => {
                 window.location.reload(true);
             },
             track: {
-                method: (payment) => {
-                    return new Promise((resolve, reject) => {
-                        try {
-                            wp.apiRequest({
-                                path: `/unuspay/pmp/checkouts/${checkoutId}/track`,
-                                method: "POST",
-                                data: payment,
-                            })
-                                .done(() => resolve({ status: 200 }))
-                                .fail((request, status) => reject(status));
-                        } catch {
-                            reject();
-                        }
-                    });
-                },
+                id: checkoutId,
+                endpoint: "/wp-json/unuspay/pmp/track",
                 poll: {
-                    method: () => {
-                        return new Promise((resolve, reject) => {
-                            wp.apiRequest({
-                                path: "/unuspay/pmp/release",
-                                method: "POST",
-                                data: { checkout_id: checkoutId },
-                            })
-                                .done((responseData) => {
-                                    resolve(responseData);
-                                })
-                                .fail(resolve);
-                        });
-                    },
-                },
-            },
+                    endpoint: "/wp-json/unuspay/pmp/release"
+                }
+
+            }
         };
 
-        DePayWidgets.Payment(configuration);
+        UnusPayWidgets.Payment(configuration);
     }
 };
 

@@ -25,8 +25,8 @@ if (!function_exists('unuspay_pmp_gateway_load'))
     DEFINE("UNUSPAY_PMP_GATEWAY_NAME", "pmp_unuspay_gateway");
 
 
-    register_activation_hook(__FILE__, 'setup_plugin');
-    function setup_plugin()
+    register_activation_hook(__FILE__, 'setup_pmp_plugin');
+    function setup_pmp_plugin()
     {
         global $wpdb;
         $latestDbVersion = 5;
@@ -358,9 +358,11 @@ if (!function_exists('unuspay_pmp_gateway_load'))
                 {
                     unset($_SESSION['unuspay_pmp_orderid']);
                     self::pmpro_unuspay_cryptocoin_payment($order);
-                }
+                    
+                }else{
 
-                return $content;
+                    return $content;
+                }
             }
 
             public function process(&$order)
@@ -398,15 +400,15 @@ if (!function_exists('unuspay_pmp_gateway_load'))
                     echo "<div class='pmpro_message pmpro_error'>" . esc_html('The Unuspay payment gateway plugin was invoked to process a payment, but it was unable to fetch the order details. Therefore, the process cannot be carried forward. Please check the errors through the following steps: 1. Check your backend configuration to ensure it is correct. 2. Check your network environment. 3. Contact the Unuspay(contact@unuspay.com) service provider for further assistance.', 'unuspay-pmp') . "</div>";
                     return false;
                 }
-                $checkout_id = wp_generate_uuid4();
-                $accept = self::getUnusPayOrder($order,$pmpro_currency, $checkout_id);
+                
+                $accept = self::getUnusPayOrder($order,$pmpro_currency);
                 /*$accept= array(
                     'name' => 'John',
                     'age' => 30,
                     'city' => 'New York'
                 );*/
                 $result = $wpdb->insert("{$wpdb->prefix}pmp_unuspay_checkouts", array(
-                    'id' => $checkout_id,
+                    'id' => $accept->id,
                     'order_id' => $order->id,
                     'accept' => json_encode($accept),
                     'created_at' => current_time('mysql')
@@ -418,10 +420,10 @@ if (!function_exists('unuspay_pmp_gateway_load'))
                 }
                 $confirmation_page_id = pmpro_getOption("confirmation_page_id");
                 $checkout_url = get_permalink($confirmation_page_id);
-                $redirect_url = "Location: " . $checkout_url . '#pmp-unuspay-checkout-' . $checkout_id . '@' . time();
+                $redirect_url = "Location: " . $checkout_url . '#pmp-unuspay-checkout-' . $accept->id . '@' . time();
                 header($redirect_url);
                 die();
-                return true;
+                
 
 
                 /*$payment_key = pmpro_getOption("unuspay_payment_key");
@@ -475,7 +477,7 @@ if (!function_exists('unuspay_pmp_gateway_load'))
 
             }
 
-            public static function getUnusPayOrder($order,$pmpro_currency, $checkout_id)
+            public static function getUnusPayOrder($order,$pmpro_currency)
             {
                 $lang = $_SERVER['HTTP_ACCEPT_LANGUAGE'];
                 $headers = array(
@@ -496,21 +498,21 @@ if (!function_exists('unuspay_pmp_gateway_load'))
                     array(
                         'headers' => $headers,
                         'body' => json_encode([
-                            'checkout_id' => $checkout_id,
                             'website' => $website,
                             'lang' => $lang,
                             'orderNo' => $order->id,
                             'email' => $order->email,
                             'payLinkId' => $payment_key,
                             'currency' => $pmpro_currency,
-                            'amount' => $total
+                            'amount' => $total,
+                            'commerceType'=>3
                         ]),
                         'method' => 'POST',
                         'data_format' => 'body'
                     )
                 );
                 $post_response_code = $post_response['response']['code'];
-                $post_response_successful = !is_wp_error($post_response_code) && $post_response_code >= 200 && $post_response_code < 300;
+                $post_response_successful = !is_wp_error($post_response_code) && $post_response_code == 200 ;
                 if (!$post_response_successful) {
                     unuspay_edd_log_error('ecommerce order failed!' . $post_response->get_error_message());
                     throw new Exception('request failed!');
@@ -523,48 +525,7 @@ if (!function_exists('unuspay_pmp_gateway_load'))
 
                 return $post_response_json->data;
             }
-            public static function unuspay_generate_checkout_token($merchant_id, $merchant_key, $orderID, $amount, $currency_code)
-            {
-                global $wpdb;
-
-                $unuspay_generate_checkout_token_url = "https://dashboard.unuspay.com/api/order/pay/token";
-                $unuspay_checkout_url = "https://dashboard.unuspay.com/#/cashier/choose?token=";
-
-                $platform = "PAIDMEMBERSHIPSPRO";
-                $callback_url = trim(get_site_url(), "/ ") . "/unuspay.pmp.callback.php?status=completed&type=AURPAYPMP&platform=AURPAY&order_id=" . $orderID;
-                $current_url = home_url(add_query_arg(array(), $wpdb->request));
-
-                $origin = array(
-                    'id' => $orderID,
-                    'price' => $amount,
-                    'currency' => $currency_code,
-                    'callback_url' => $callback_url,
-                    'succeed_url' => $current_url,
-                    'url' => trim(get_site_url(), "/ "),
-                );
-
-                $data = array(
-                    'platform' => $platform,
-                    'origin' => $origin,
-                    'user_id' => $merchant_id,
-                    'key' => $merchant_key
-                );
-
-                $token_result = self::httpPost($unuspay_generate_checkout_token_url, json_encode($data), $merchant_key);
-                $response_data = json_decode($token_result['body'], true);
-                if (isset($response_data['data']) && $response_data['code'] == 0 && isset($response_data['data']['token']) && $response_data['data']['token'] != "")
-                {
-                    $token = $response_data['data']['token'];
-                    $redirect_url = $unuspay_checkout_url . $token;
-                    wp_redirect($redirect_url);
-                    exit;
-                }
-
-                echo '<div>' . esc_html(__('Please make sure you use the correct Merchant ID and Merchant Public Key.', 'unuspay-pmp')) . '</div>';
-
-                return false;
-            }
-
+             
             public static function httpPost($url, $data, $API_KEY)
             {
                 $body = $data;
@@ -624,29 +585,33 @@ if (!function_exists('unuspay_pmp_gateway_load'))
         }
     }
 }
-
+function unuspay_pmp_log_error($message)
+{
+    error_log(date('Y-m-d H:i:s') . ' ERROR: ' . $message . "\n", 3, ABSPATH . "/wp-content/plugins/web3-paid-memberships-unuspay-payments/logs/error.log");
+    //error_log(date('Y-m-d H:i:s') . ' ERROR: ' . $message . "\n");
+}
 
 add_action(
-    'rest_api_init', 'init_rest_api'
+    'rest_api_init', 'init_pmp_rest_api'
 );
 
-function init_rest_api()
+function init_pmp_rest_api()
 {
     register_rest_route(
         'unuspay/pmp',
         '/checkouts/(?P<id>[\w-]+)',
         [
             'methods' => 'POST',
-            'callback' => 'get_checkout_accept',
+            'callback' => 'get_pmp_checkout_accept',
             'permission_callback' => '__return_true'
         ]
     );
     register_rest_route(
         'unuspay/pmp',
-        '/checkouts/(?P<id>[\w-]+)/track',
+        '/track',
         [
             'methods' => 'POST',
-            'callback' => 'track_payment',
+            'callback' => 'track_pmp_payment',
             'permission_callback' => '__return_true'
         ]
     );
@@ -655,7 +620,7 @@ function init_rest_api()
         '/validate',
         array(
             'methods' => 'POST,GET',
-            'callback' => 'process_notify',
+            'callback' => 'process_pmp_notify',
             'permission_callback' => '__return_true'
         )
     );
@@ -664,14 +629,14 @@ function init_rest_api()
         '/release',
         [
             'methods' => 'POST',
-            'callback' => 'check_release',
+            'callback' => 'check_pmp_release',
             'permission_callback' => '__return_true'
         ]
     );
 
 }
 
-function get_checkout_accept($request)
+function get_pmp_checkout_accept($request)
 {
 
     global $wpdb;
@@ -701,29 +666,24 @@ function get_checkout_accept($request)
     if ($order->status === 'success') {
         $response = rest_ensure_response(
             json_encode([
-                'redirect' => pmp_get_success_page_uri()
+                'forward_to' =>pmpro_url( 'confirmation')
             ])
         );
     } else {
         $response = rest_ensure_response($accept);
     }
 
-    $response->header('X-Checkout', json_encode([
-        'request_id' => $id,
-        'checkout_id' => $checkout_id,
-        'order_id' => $order_id,
-        'total' => $order->total,
-        'currency' => $order->currency
-    ]));
+    
     return $response;
 }
 
-function track_payment($request)
+function track_pmp_payment($request)
 {
 
     global $wpdb;
-    $jsonBody = $request->get_json_params();
-    $id = $jsonBody->id;
+    $body = $request->get_body();
+    $jsonBody = json_decode($body,true);
+    $id = $jsonBody["orderId"];
     $accept = $wpdb->get_var(
         $wpdb->prepare(
             "SELECT accept FROM {$wpdb->prefix}pmp_unuspay_checkouts WHERE id = %s LIMIT 1",
@@ -736,80 +696,86 @@ function track_payment($request)
             $id
         )
     );
-    $payment = pmp_get_payment($order_id);
+    $payment = new MemberOrder();
+    $payment->getMemberOrderByID($order_id);
 
-    $tracking_uuid = wp_generate_uuid4();
+    $tracking_uuid;
 
     $total = $payment->total;
 
-    $transaction_id = $jsonBody->transaction;
+    $transaction_id = $jsonBody["transaction"];
 
     if (empty($transaction_id)) { // PAYMENT TRACE
 
-        if ($payment->status('success') || $payment->status('pending')) {
+        if ($payment->status=='success') {
             unuspay_pmp_log_error('Order has been completed already!');
             throw new Exception('Order has been completed already!');
         }
 
 
     } else { // PAYMENT TRACKING
+        $tracking_uuid = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT tracking_uuid FROM {$wpdb->prefix}wc_unuspay_transactions WHERE checkout_id = %s ORDER BY created_at DESC LIMIT 1",
+                $id
+            )
+        );
+        if (empty($tracking_uuid)) {
+            $tracking_uuid = wp_generate_uuid4();
+            $result = $wpdb->insert("{$wpdb->prefix}pmp_unuspay_transactions", array(
+                'order_id' => $order_id,
+                'checkout_id' => $id,
+                'tracking_uuid' => $tracking_uuid,
+                'blockchain' => $jsonBody["blockchain"],
+                'transaction_id' => $transaction_id,
+                'sender_id' => $jsonBody["sender"],
+                'receiver_id' => '',
+                'token_id' => '',
+                'amount' => 0.00,
+                'status' => 'VALIDATING',
 
-        $result = $wpdb->insert("{$wpdb->prefix}pmp_unuspay_transactions", array(
-            'order_id' => $order_id,
-            'checkout_id' => $id,
-            'tracking_uuid' => $tracking_uuid,
-            'blockchain' => $jsonBody->blockchain,
-            'transaction_id' => $transaction_id,
-            'sender_id' => $jsonBody->sender,
-            'receiver_id' => '',
-            'token_id' => '',
-            'amount' => 0.00,
-            'status' => 'VALIDATING',
-
-            'created_at' => current_time('mysql')
-        ));
-        if (false === $result) {
-            unuspay_pmp_log_error('Storing tracking failed!');
-            throw new Exception('Storing tracking failed!!');
+                'created_at' => current_time('mysql')
+            ));
+            if (false === $result) {
+                unuspay_pmp_log_error('Storing tracking failed!');
+                throw new Exception('Storing tracking failed!!');
+            }
         }
-
     }
 
-    $endpoint = 'http://110.41.71.103:8080/payment/pay';
+    $endpoint = 'http://110.41.71.103:9080/payment/pay';
 
-    $jsonBody->callback = get_site_url(null, 'index.php?rest_route=/unuspay/pmp/validate');
-    $jsonBody->trackingId = $tracking_uuid;
+    $jsonBody["callback"] = get_site_url(null, 'wp-json/unuspay/pmp/validate');
+    $jsonBody["trackingId"] = $tracking_uuid;
+    $jsonBody["orderId"] = $id;
+
+    $headers = array(
+        'Content-Type' => 'application/json; charset=utf-8',
+        'csrf_token' => $id
+    );
+
     $post = wp_remote_post($endpoint,
         array(
+            'headers' => $headers,
             'body' => json_encode($jsonBody),
             'method' => 'POST',
             'data_format' => 'body'
         )
     );
 
-    $response = rest_ensure_response('{}');
-
-    if (!is_wp_error($post) && (wp_remote_retrieve_response_code($post) == 200 || wp_remote_retrieve_response_code($post) == 201) && wp_remote_retrieve_body($post)->code == 200) {
-        $response->set_status(200);
-    } else {
-        if (is_wp_error($post)) {
-            UnusPay_WC_Payments::log($post->get_error_message());
-        } else {
-            error_log(wp_remote_retrieve_body($post));
-        }
-        $response->set_status(500);
-    }
-
+    $response = rest_ensure_response(json_decode(wp_remote_retrieve_body($post),true));
+    $response->set_status(200);
     return $response;
 }
 
-function check_release($request)
+function check_pmp_release($request)
 {
 
     global $wpdb;
-    $jsonBody = $request->get_json_params();
+    $body = $request->get_body();
+    $jsonBody = json_decode($body,true);
 
-    $checkout_id = $jsonBody->id;
+    $checkout_id =  $jsonBody["orderId"];
     $existing_transaction_status = $wpdb->get_var(
         $wpdb->prepare(
             "SELECT status FROM {$wpdb->prefix}pmp_unuspay_transactions WHERE checkout_id = %s ORDER BY created_at DESC LIMIT 1",
@@ -825,18 +791,22 @@ function check_release($request)
             )
         );
 
-        $endpoint = 'http://110.41.71.103:8080/payment/release';
+        $endpoint = 'http://110.41.71.103:9080/payment/release';
+
+        $headers = array(
+            'Content-Type' => 'application/json; charset=utf-8',
+        );
 
         $response = wp_remote_post($endpoint,
             array(
+                'headers' => $headers,
                 'body' => json_encode($jsonBody),
                 'method' => 'POST',
                 'data_format' => 'body'
             )
         );
-        $rspBody = wp_remote_retrieve_body($response);
-        if (!is_wp_error($response) && (wp_remote_retrieve_response_code($response) == 200 || wp_remote_retrieve_response_code($response) == 201) && $rspBody->code == 200) {
-
+        $rspBody = json_decode(wp_remote_retrieve_body($response));
+        if (!is_wp_error($response) && (wp_remote_retrieve_response_code($response) == 200) && $rspBody->code == 200) {
 
             $order_id = $wpdb->get_var(
                 $wpdb->prepare(
@@ -844,20 +814,15 @@ function check_release($request)
                     $tracking_uuid
                 )
             );
-
-            $expected_blockchain = $wpdb->get_var(
-                $wpdb->prepare(
-                    "SELECT blockchain FROM {$wpdb->prefix}pmp_unuspay_transactions WHERE tracking_uuid = %s ORDER BY id DESC LIMIT 1",
-                    $tracking_uuid
-                )
-            );
+ 
             $expected_transaction = $wpdb->get_var(
                 $wpdb->prepare(
                     "SELECT transaction_id FROM {$wpdb->prefix}pmp_unuspay_transactions WHERE tracking_uuid = %s ORDER BY id DESC LIMIT 1",
                     $tracking_uuid
                 )
             );
-            $order = wc_get_order($order_id);
+            $order = new MemberOrder();
+            $order->getMemberOrderByID($order_id);
             //$responseBody = json_decode( $response['body'] );
             $status = $rspBody->data->status;
             $transaction = $rspBody->data->transaction;
@@ -873,8 +838,7 @@ function check_release($request)
             }
 
             if (
-                'success' === $status &&
-                $rspBody->data->blockchain === $expected_blockchain
+                'success' === $status 
             ) {
                 $wpdb->query(
                     $wpdb->prepare(
@@ -916,7 +880,7 @@ function check_release($request)
     );
 
     if (empty($existing_transaction_status) || 'VALIDATING' === $existing_transaction_status) {
-        $response = new WP_REST_Response();
+        $response = new WP_REST_Response("{}");
         $response->set_status(200);
         return $response;
     }
@@ -927,7 +891,8 @@ function check_release($request)
             $checkout_id
         )
     );
-    $order = wc_get_order($order_id);
+    $order = new MemberOrder();
+    $order->getMemberOrderByID($order_id);
 
 
     if ('SUCCESS' === $existing_transaction_status) {
@@ -935,7 +900,8 @@ function check_release($request)
             'code' => 200,
             'data' => [
                 'status' => 'success',
-                'forward_to' => pmp_get_success_page_uri()
+                //'forward_to' => home_url('/membership-orders/').'?invoice='.$order->code
+                'forward_to' =>pmpro_url( 'confirmation')
             ]
         ]);
         $response->set_status(200);
@@ -959,13 +925,14 @@ function check_release($request)
     }
 }
 
-function process_notify(WP_REST_Request $request)
+function process_pmp_notify(WP_REST_Request $request)
 {
     global $wpdb;
     $response = new WP_REST_Response();
+    $body = $request->get_body();
+    $jsonBody = json_decode($body,true);
 
-
-    $tracking_uuid = $request->get_param('trackingId');
+    $tracking_uuid = $jsonBody['trackingId'];
     $existing_transaction_id = $wpdb->get_var(
         $wpdb->prepare(
             "SELECT id FROM {$wpdb->prefix}pmp_unuspay_transactions WHERE tracking_uuid = %s ORDER BY id DESC LIMIT 1",
@@ -986,12 +953,7 @@ function process_notify(WP_REST_Request $request)
         )
     );
 
-    $expected_blockchain = $wpdb->get_var(
-        $wpdb->prepare(
-            "SELECT blockchain FROM {$wpdb->prefix}pmp_unuspay_transactions WHERE tracking_uuid = %s ORDER BY id DESC LIMIT 1",
-            $tracking_uuid
-        )
-    );
+    
     $expected_transaction = $wpdb->get_var(
         $wpdb->prepare(
             "SELECT transaction_id FROM {$wpdb->prefix}pmp_unuspay_transactions WHERE tracking_uuid = %s ORDER BY id DESC LIMIT 1",
@@ -999,8 +961,8 @@ function process_notify(WP_REST_Request $request)
         )
     );
 
-    $status = $request->get_param('status');
-    $transaction = $request->get_param('transaction');
+    $status = $jsonBody['status'];
+    $transaction = $jsonBody['transaction'];
 
     if ($expected_transaction != $transaction) {
         $wpdb->query(
@@ -1013,8 +975,7 @@ function process_notify(WP_REST_Request $request)
     }
 
     if (
-        'success' === $status &&
-        $request->get_param('blockchain') === $expected_blockchain
+        'success' === $status 
     ) {
         $wpdb->query(
             $wpdb->prepare(
@@ -1058,12 +1019,12 @@ function pmp_custom_scripts()
 {
     // 仅在 EDD 结账页面加载
     //if (pmp_is_checkout()) {
-    wp_register_script( 'UNUSPAY_WC_WIDGETS',plugin_dir_url(__FILE__) .'dist/widgets.bundle.js', array(), '1.0', true);
-    wp_enqueue_script( 'UNUSPAY_WC_WIDGETS' );
+    wp_register_script( 'UNUSPAY_PMP_WIDGETS',plugin_dir_url(__FILE__) .'dist/widgets.bundle.js', array(), '1.0', true);
+    wp_enqueue_script( 'UNUSPAY_PMP_WIDGETS' );
 
     // 注册脚本（依赖 jQuery）
     wp_register_script(
-        'pmp-unuspay-check',
+        'UNUSPAY_PMP_CHECKOUT',
         plugin_dir_url(__FILE__) . 'dist/checkout.js', // 脚本路径
         array('wp-api-request', 'jquery'), // 依赖
         '1.0', // 版本号
@@ -1072,6 +1033,6 @@ function pmp_custom_scripts()
 
 
     // 加载脚本
-    wp_enqueue_script('pmp-unuspay-check');
+    wp_enqueue_script('UNUSPAY_PMP_CHECKOUT');
     //}
 }
