@@ -347,7 +347,7 @@ if (!function_exists('unuspay_pmp_gateway_load'))
             {
                 global $wpdb;
 
-                if (!session_id()) session_start();
+               /*  if (!session_id()) session_start();
 
                 if (!isset($_SESSION['unuspay_pmp_orderid'])) return $content;
 
@@ -362,7 +362,8 @@ if (!function_exists('unuspay_pmp_gateway_load'))
                 }else{
 
                     return $content;
-                }
+                } */
+                return $content;
             }
 
             public function process(&$order)
@@ -418,62 +419,14 @@ if (!function_exists('unuspay_pmp_gateway_load'))
 
                     throw new Exception('Storing checkout failed: ' . $error_message);
                 }
-                $confirmation_page_id = pmpro_getOption("confirmation_page_id");
-                $checkout_url = get_permalink($confirmation_page_id);
-                $redirect_url = "Location: " . $checkout_url . '#pmp-unuspay-checkout-' . $accept->id . '@' . time();
+                //$confirmation_page_id = pmpro_getOption("confirmation_page_id");
+                //$checkout_url = get_permalink($confirmation_page_id);
+                $redirect_url = "Location: " .   '#pmp-unuspay-checkout-' . $accept->id . '@' . time();
                 header($redirect_url);
                 die();
                 
 
-
-                /*$payment_key = pmpro_getOption("unuspay_payment_key");
-
-                $order_id = $order->id;
-                $order_total = $order->total;
-                $order_currency = $pmpro_currency;
-                $order_user_id = $order->user_id;
-
-                if (!$order_id)
-                {
-                    echo "<div class='pmpro_message pmpro_error'>" . esc_html(__('The Unuspay payment gateway plugin was triggered to process a payment, but it failed to retrieve the order details. As a result, the process cannot be continued. Please check the errors through the following steps: 1. Check your backend configuration to ensure it is correct. 2. Check your network environment. 3. Contact the Unuspay(contact@unuspay.com) service provider for further assistance.', 'unuspay-pmp')) . "</div>";
-                }
-                elseif (!$payment_key || !$order_total || !$order_currency || !$order_user_id)
-                {
-                    echo "<div class='pmpro_message pmpro_error'>" . esc_html(__('Currently, there are some issues with the unuspay crypto payment. Please check the errors through the following steps: 1. Check your backend configuration to ensure it is correct. 2. Check your network environment. 3. Contact the Unuspay(contact@unuspay.com) service provider for further assistance.', 'unuspay-pmp')) . "</div>";
-                }
-                else
-                {
-                    $plugin = "unuspaypmpro";
-                    $amount = $order_total;
-                    $currency = $order_currency;
-                    $orderID = $order_id;
-                    $userID = $order_user_id;
-                    $platform = "PAIDMEMBERSHIPPRO";
-
-                    if (!$userID) $userID = "guest";
-
-                    if (!$userID)
-                    {
-                        echo "<div align='center'><a href='" . wp_login_url(get_permalink()) . "'>
-                        <span>" . esc_html(__('Before making payment, you must login or register on website.', 'unuspay-pmp')) . "</span></a></div>";
-                    }
-                    elseif ($amount == 0)
-                    {
-                        echo "<div class='pmpro_message pmpro_error'>" . esc_html(sprintf(__("The amount for this order is '%s' and cannot be paid through Unuspay Crypto Payment. Please contact us(contact@unuspay.com) if you need assistance.", 'unuspay-pmp')), $amount . " " . $currency) . "</div>";
-                    }
-                    elseif ($amount < 0)
-                    {
-                        return true;
-                    }
-                    else
-                    {
-                        if ($amount > 0)
-                        {
-                            self::unuspay_generate_checkout_token( $payment_key, $orderID, $amount, $currency);
-                        }
-                    }
-                }*/
-
+ 
 
             }
 
@@ -578,7 +531,7 @@ if (!function_exists('unuspay_pmp_gateway_load'))
                     return true;
                 }
 
-                wp_redirect(pmpro_url("confirmation"));
+                self::pmpro_unuspay_cryptocoin_payment($order);
                 
                 exit;
             }
@@ -849,8 +802,7 @@ function check_pmp_release($request)
                         $tracking_uuid
                     )
                 );
-                $order->status = 'success';
-                $order->saveOrder();
+               order_success($order);
 
             } else if ('failed' === $status) {
                 $failed_reason = 'fail';
@@ -901,7 +853,7 @@ function check_pmp_release($request)
             'data' => [
                 'status' => 'success',
                 //'forward_to' => home_url('/membership-orders/').'?invoice='.$order->code
-                'forward_to' =>pmpro_url( 'confirmation')
+                 'forward_to' =>pmpro_url("confirmation", "?level=" . $order->membership_id)
             ]
         ]);
         $response->set_status(200);
@@ -923,6 +875,51 @@ function check_pmp_release($request)
         $response->set_status(200);
         return $response;
     }
+}
+
+function order_success($order){
+    global $wpdb;
+    $pmpro_level = $wpdb->get_row("SELECT * FROM $wpdb->pmpro_membership_levels WHERE id = '" . (int)$order->membership_id . "' LIMIT 1");
+
+    $user_id = $order->user_id;
+
+    $old_startdate = current_time('timestamp');
+    $old_enddate = current_time('timestamp');
+
+    $active_levels = pmpro_getMembershipLevelsForUser($user_id);
+
+    if (is_array($active_levels))
+            foreach ($active_levels as $row)
+            {
+                if ($row->id == $pmpro_level->id && $row->enddate > current_time('timestamp'))
+                {
+                    $old_startdate = $row->startdate;
+                    $old_enddate   = $row->enddate;
+                }
+            }
+
+    $startdate = "'" . date("Y-m-d H:i:s", $old_startdate) . "'";
+    $enddate = (!empty($pmpro_level->expiration_number)) ? "'" . date("Y-m-d H:i:s", strtotime("+ ".$pmpro_level->expiration_number." ".$pmpro_level->expiration_period, $old_enddate)) . "'" : "NULL";
+
+    $custom_level = array(
+        'user_id' => $user_id,
+        'membership_id' => $pmpro_level->id,
+        'code_id' => '',
+        'initial_payment'   => $pmpro_level->initial_payment,
+        'billing_amount' 	=> $pmpro_level->billing_amount,
+        'cycle_number' 		=> $pmpro_level->cycle_number,
+        'cycle_period' 		=> $pmpro_level->cycle_period,
+        'billing_limit' 	=> $pmpro_level->billing_limit,
+        'trial_amount' 		=> $pmpro_level->trial_amount,
+        'trial_limit' 		=> $pmpro_level->trial_limit,
+        'startdate' 		=> $startdate,
+        'enddate' 			=> $enddate);
+
+    // pmpro_changeMembershipLevel($new_membership_level_id, $user_id);
+    pmpro_changeMembershipLevel($custom_level, $user_id, 'changed');
+    $order->status = 'success';
+    $order->saveOrder();
+
 }
 
 function process_pmp_notify(WP_REST_Request $request)
@@ -988,8 +985,7 @@ function process_pmp_notify(WP_REST_Request $request)
         );
         $order = new MemberOrder();
         $order->getMemberOrderByID($order_id);
-        $order->status = 'success';
-        $order->saveOrder();
+        order_success($order);
 
     } else {
         $failed_reason = $request->get_param('failed_reason');
