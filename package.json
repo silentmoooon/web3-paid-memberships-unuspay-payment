@@ -25,7 +25,7 @@
     "private": false,
     "dependencies": {
         "@depay/web3-blockchains": "^9.2.5",
-        "@depay/widgets": "^12.1.0",
+        "@unuspay/widgets": "^12.1.0",
         "@unuspay/web3-paid-memberships-unuspay-payment": "file:"
     },
     "engines": {
