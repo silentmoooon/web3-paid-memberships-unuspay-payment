@@ -1,18 +1,21 @@
 <?php
 
 /**
- * Plugin Name: Unuspay Crypto payment for Paid Memberships Pro
- * Plugin URI: https://
- * Description: Pay with Crypto For Paid Memberships Pro
- * Version: 1.0.17
- * Author: Unuspay
+ * Plugin Name: unuspay crypto payments for pmp
+ * Plugin URI: https://unuspay.com/e-commerce
+ * Description: unuspay Payments directly into your own wallet.
+ * Author: unuspay
  * Author URI: https://unuspay.com
+ * Text Domain: unuspay-crypto-payments-for-paid-memberships-pro
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: Expand customer base with crypto payment, non-custodail & no fraud/chargeback, low fees, 50+ cryptos. Invoice, payment link, payment button.
- * Tags: paid memberships pro, pmp, bitcoincash, bitcoin cash, bitcoins, gourl, cryptocurrency, btc, coinbase, bitpay, ecommerce, paypal, accept bitcoin, payment, payment gateway, digital downloads, download, downloads, e-commerce, e-downloads, e-store, wp ecommerce, litecoin, dogecoin, dash，Crypto, cryptocurrency, crypto payment, erc20, cryptocurrency, bitcoin, bitcoin lighting network, ethereum, crypto pay, smooth withdrawals, cryptocurrency payments, low commission, pay with meta mask, payment button, invoice, crypto paid memberships pro，bitcoin paid memberships pro，ethereum，pay crypto，virtual currency，bitcoin wordpress plugin，free crypto plugin,
- * Requires at least: 5.8
+ * Domain Path: /languages
+ * Requires Plugins: Paid Memberships Pro
+ * WC requires at least: 6.2
+ * WC tested up to: 9.8.5
+ * Requires at least: 6.0
  * Requires PHP: 7.2
+ * Version: 1.0.0
  */
 
 if (!defined('ABSPATH')) exit;
@@ -432,7 +435,7 @@ if (!function_exists('unuspay_pmp_gateway_load'))
 
             public static function getUnusPayOrder($order,$pmpro_currency)
             {
-                $lang = $_SERVER['HTTP_ACCEPT_LANGUAGE'];
+                $lang = isset($_SERVER['HTTP_ACCEPT_LANGUAGE']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_ACCEPT_LANGUAGE'])) : '';
                 $headers = array(
                     'accept-language' => $lang,
                     'Content-Type' => 'application/json; charset=utf-8',
@@ -538,11 +541,7 @@ if (!function_exists('unuspay_pmp_gateway_load'))
         }
     }
 }
-function unuspay_pmp_log_error($message)
-{
-    error_log(date('Y-m-d H:i:s') . ' ERROR: ' . $message . "\n", 3, ABSPATH . "/wp-content/plugins/web3-paid-memberships-unuspay-payments/logs/error.log");
-    //error_log(date('Y-m-d H:i:s') . ' ERROR: ' . $message . "\n");
-}
+ 
 
 add_action(
     'rest_api_init', 'init_pmp_rest_api'
@@ -661,7 +660,6 @@ function track_pmp_payment($request)
     if (empty($transaction_id)) { // PAYMENT TRACE
 
         if ($payment->status=='success') {
-            unuspay_pmp_log_error('Order has been completed already!');
             throw new Exception('Order has been completed already!');
         }
 
@@ -690,7 +688,6 @@ function track_pmp_payment($request)
                 'created_at' => current_time('mysql')
             ));
             if (false === $result) {
-                unuspay_pmp_log_error('Storing tracking failed!');
                 throw new Exception('Storing tracking failed!!');
             }
         }
