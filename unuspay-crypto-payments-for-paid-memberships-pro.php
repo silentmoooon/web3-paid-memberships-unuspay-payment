@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Plugin Name: unuspay crypto payments for pmp
+ * Plugin Name: UnusPay Crypto Payments For Paid Memberships Pro
  * Plugin URI: https://unuspay.com/e-commerce
  * Description: unuspay Payments directly into your own wallet.
  * Author: unuspay
@@ -9,10 +9,7 @@
  * Text Domain: unuspay-crypto-payments-for-paid-memberships-pro
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Domain Path: /languages
- * Requires Plugins: Paid Memberships Pro
- * WC requires at least: 6.2
- * WC tested up to: 9.8.5
+ * Requires Plugins: paid-memberships-pro
  * Requires at least: 6.0
  * Requires PHP: 7.2
  * Version: 1.0.0
@@ -72,8 +69,7 @@ if (!function_exists('unuspay_pmp_gateway_load'))
         update_option('unuspay_pmp_db_version', $latestDbVersion);
     }
 
-
-    //add_action('pmpro_invoice_bullets_top', function (){error_reporting(E_ERROR);});
+ 
 
     function unuspay_pmp_gateway_load()
     {
@@ -81,7 +77,7 @@ if (!function_exists('unuspay_pmp_gateway_load'))
 
         add_action('init', array('PMProGateway_unuspay', 'init'));
 
-        add_filter('pmpro_pages_shortcode_confirmation', array('PMProGateway_unuspay', 'pmpro_pages_shortcode_confirmation'), 20, 1);
+        //add_filter('pmpro_pages_shortcode_confirmation', array('PMProGateway_unuspay', 'pmpro_pages_shortcode_confirmation'), 20, 1);
 
         add_filter('plugin_action_links', array('PMProGateway_unuspay', 'plugin_action_links'), 10, 2);
 
@@ -91,7 +87,7 @@ if (!function_exists('unuspay_pmp_gateway_load'))
 
         add_action('pmpro_checkout_boxes', array('PMProGateway_unuspay', 'checkout_boxes'));
 
-        //add_action('parse_request', array('PMProGateway_unuspay', 'callback_parse_request'));
+ 
 
 		add_filter( 'plugin_row_meta', array('PMProGateway_unuspay', 'plugin_row_meta'), 10, 2 );
 
@@ -131,8 +127,7 @@ if (!function_exists('unuspay_pmp_gateway_load'))
 
                 if ($file == $this_plugin)
                 {
-                    //$unuspay_link = '<a href="https://dashboard.unuspay.com/#/login?cur_url=/integration&platform=PAIDMEMBERSHIPSPRO" target="_blank" style="color: #39b54a; font-weight: bold;">' . __('Get Unuspay', UNUSPAY_PMP_GATEWAY_NAME) . '</a>';
-                    $settings_link = '<a href="' . admin_url('admin.php?page=pmpro-paymentsettings') . '">' . __('Settings', UNUSPAY_PMP_GATEWAY_NAME) . '</a>';
+                    $settings_link = '<a href="' . admin_url('admin.php?page=pmpro-paymentsettings') . '">' . esc_html__('Settings', 'unuspay-crypto-payments-for-paid-memberships-pro') . '</a>';
                     array_unshift($links,  $settings_link);
                 }
 
@@ -145,7 +140,7 @@ if (!function_exists('unuspay_pmp_gateway_load'))
 
                 if (isset($_POST['gateway']))
                 {
-                    $gateway = $_SESSION['unuspay_pmp_gateway'] = sanitize_text_field($_POST['gateway']);
+                    $gateway = $_SESSION['unuspay_pmp_gateway'] = sanitize_text_field(wp_unslash($_POST['gateway']));
                 }
                 else
                 {
@@ -168,20 +163,7 @@ if (!function_exists('unuspay_pmp_gateway_load'))
                 return $gateways;
             }
 
-            public static function admin_unuspay_notice()
-            {
-                if (!empty($_REQUEST['page']) && $_REQUEST['page'] == 'pmpro-paymentsettings')
-                {
-                    $tmp = '<div class="notice notice-info is-dismissible" style="margin:20px">';
-                    $tmp .= '<img style="float:left;width: 140px;height: 55px;" alt="img" src="' . plugins_url("/images/unuspay.png", __FILE__) . '" border="0" vspace="12" hspace="10">';
-                    $tmp .= '<p>' . sprintf(__("You can provide your customers with multiple payment options at the checkout page of PaidMembershipsPro. To enable this feature, you need to set up your Unuspay Crypto Payment Gateway settings on this page, then click the 'Save Settings' button. Afterward, you can switch to another payment gateway (such as Paypal or Stripe) and keep it as your primary gateway. The Unuspay settings will still be remembered in the background, and both payment gateways will be displayed on the checkout page. If you only want to use the Unuspay Crypto Payment Gateway on the checkout page, you should keep it as your primary gateway. For more information, please visit ", UNUSPAY_PMP_GATEWAY_NAME));
-                    $tmp .= '<a href="www.unuspay.com" target="_blank">'. "www.unuspay.com" . '</a>.</p>';
-                    $tmp .= '</div>';
-                    echo wp_kses_post($tmp);
-                }
-
-                return true;
-            }
+            
 
             public static function getGatewayOptions()
             {
@@ -191,11 +173,7 @@ if (!function_exists('unuspay_pmp_gateway_load'))
                     'unuspay_payment_key',
                 );
 
-              /*  $levels = $wpdb->get_col("SELECT DISTINCT name FROM {$wpdb->pmpro_membership_levels}");
-
-                foreach ($levels as $level) {
-                    $options[] = 'unuspay_level_' . esc_attr(str_replace(' ', '', $level));
-                }*/
+ 
 
                 return $options;
             }
@@ -213,7 +191,7 @@ if (!function_exists('unuspay_pmp_gateway_load'))
             {
                 if (empty($gateways['unuspay']))
                 {
-                    $gateways = array_slice($gateways, 0, 1) + array("unuspay" => __('Unuspay', UNUSPAY_PMP_GATEWAY_NAME)) + array_slice($gateways, 1);
+                    $gateways = array_slice($gateways, 0, 1) + array("unuspay" => esc_html__('Unuspay', 'unuspay-crypto-payments-for-paid-memberships-pro')) + array_slice($gateways, 1);
                 }
 
                 return $gateways;
@@ -252,8 +230,8 @@ if (!function_exists('unuspay_pmp_gateway_load'))
                 if ( $this_plugin === $plugin_file )
                 {
                     $row_meta = [
-				        'dome' => '<a style="color: #39b54a;" href="https://example-wp.unuspay.com/membership-account/membership-checkout/" aria-label="' . esc_attr( __( 'View Unuspay Demo', UNUSPAY_PMP_GATEWAY_NAME ) ) . '" target="_blank">' . __( 'Demo', UNUSPAY_PMP_GATEWAY_NAME ) . '</a>',
-                        'video' => '<a style="color: #39b54a;" href="https://youtu.be/OCaz-_dbTGA" aria-label="' . esc_attr( __( 'View Unuspay Video Tutorials', UNUSPAY_PMP_GATEWAY_NAME ) ) . '" target="_blank">' . __( 'Video Tutorials', UNUSPAY_PMP_GATEWAY_NAME ) . '</a>',
+				        'dome' => '<a style="color: #39b54a;" href="https://example-wp.unuspay.com/membership-account/membership-checkout/" aria-label="' . esc_attr( esc_html__( 'View Unuspay Demo', 'unuspay-crypto-payments-for-paid-memberships-pro' ) ) . '" target="_blank">' . esc_html__( 'Demo', 'unuspay-crypto-payments-for-paid-memberships-pro' ) . '</a>',
+                        'video' => '<a style="color: #39b54a;" href="https://youtu.be/OCaz-_dbTGA" aria-label="' . esc_attr( esc_html__( 'View Unuspay Video Tutorials', 'unuspay-crypto-payments-for-paid-memberships-pro' ) ) . '" target="_blank">' . esc_html__( 'Video Tutorials', 'unuspay-crypto-payments-for-paid-memberships-pro' ) . '</a>',
                     ];
 
                     $plugin_meta = array_merge( $plugin_meta, $row_meta );
@@ -266,7 +244,7 @@ if (!function_exists('unuspay_pmp_gateway_load'))
             {
                 global $unuspay, $wpdb;
 
-                $description  = "<a target='_blank' href='https://unuspay.com/' ><img border='0' src='" . plugins_url('/images/unuspay.png', __FILE__) . "'></a>";
+                $description  = "<a target='_blank' href='https://unuspay.com/' ><img border='0' src='" . esc_url(plugins_url('/assets/images/unuspay.png', __FILE__)) . "'></a>";
                 $description .= '<p style="margin-top: 10px;"><b>Unuspay official <a href="https://unuspay.com/" target="_blank">website.</a></b></p>';
                  $tr = '<tr class="gateway gateway_unuspay"' . ($gateway != "unuspay" ? ' style="display: none;"' : '') . '>';
                 $tmp  = '<tr class="pmpro_settings_divider gateway gateway_unuspay"' . ($gateway != "unuspay" ? ' style="display: none;"' : '') . '>';
@@ -276,59 +254,16 @@ if (!function_exists('unuspay_pmp_gateway_load'))
                 $tmp .=  '<td colspan="2"><div style="font-size:13px;line-height:22px">' . $description . '</div></td></tr>';
 
                 $tmp .= $tr .  '<th scope="row" valign="top" style="padding-left:10px"><label for="unuspay_payment_key">Unuspay payment Key:</label></th><td><input  style="width: 320px" type="text" value="' . $options["unuspay_payment_key"] . '" name="unuspay_payment_key" id="unuspay_payment_key"></td></tr>';
-
-               /* $tmp .= $tr . '<td colspan="2"><h4>Set Up Membership Level Display</h4>';
-                $tmp .= "</tr>";
-                $tmp .= $tr . '<td colspan="12"><p>Note:</p><ul><li>1. Unuspay Crypto Payment Gateway will always be available, but you can configure which membership levels to show below.</li><li>2. Check to show which level will show unuspay payment.</li><li>3. If it doesn\'t work, make sure there are no strange characters in the level name.</li></ul></td>';
-                $tmp .= "</tr>";
-                $tmp .= $tr . '<td colspan="12">';
-
-                $levels = $wpdb->get_col("SELECT DISTINCT name FROM {$wpdb->pmpro_membership_levels}");
-                foreach ($levels as $level) {
-                    $level_key = "unuspay_level_" . esc_attr(str_replace(' ', '', $level));
-                    $level_value = $options[$level_key];
-        
-                    $tmp .= '<label style="margin-right: 10px;"><input type="checkbox" name="' . esc_attr($level_key) . '" ' . (!empty($level_value) ? 'checked="checked"' : '') . ' value="' . 1 . '"> ' . esc_html($level) . '</label>';
-                }
-                $tmp .="</td></tr>";*/
+ 
                 
                 echo $tmp;
 
-             /*   if (!empty($_REQUEST['page']) && $_REQUEST['page'] == 'pmpro-paymentsettings')
-                {
-                    try {
-                        self::verify_unuspay_key($options['unuspay_payment_key']);
-                    } catch (Exception $e) {
-                        return;
-                    }
-                }*/
+           
 
                 return;
             }
-
-            public static function verify_unuspay_key($merchant_public_key)
-            {
-
-                /*$key_result = wp_remote_get( 'https://dashboard.unuspay.com/api/plugin/key/verify?id=' . $merchant_id . '&key=' .$merchant_public_key .'&name=PAIDMEMBERSHIPSPRO&url=' . parse_url(site_url(), PHP_URL_HOST) );
-                $response_data = json_decode($key_result['body'], true);
-
-
-                if (!($response_data['data']))
-                {
-                    self::admin_notice_for_key();
-                    self::admin_unuspay_notice();
-                }*/
-            }
-
-            public static function admin_notice_for_key()
-            {
-                ?>
-                <div class="notice notice-error is-dismissible">
-                    <p><?php _e( '[Unuspay PMP] The unuspay merchant id and public key you entered is incorrect. Please check the video link for more information', UNUSPAY_PMP_GATEWAY_NAME ); ?>
-                    (<a href="https://youtu.be/OCaz-_dbTGA" target="blank">https://youtu.be/OCaz-_dbTGA</a>)</p>
-                </div>
-                <?php
-            }
+ 
+ 
             public static function checkout_boxes()
             {
                 global $pmpro_requirebilling, $gateway, $pmpro_review, $wpdb;
@@ -336,9 +271,8 @@ if (!function_exists('unuspay_pmp_gateway_load'))
                 $setting_gateway = get_option("pmpro_gateway");
                 if ($setting_gateway == "unuspay")
                 {
-                    echo '<h2>' . esc_html(__('Payment method', UNUSPAY_PMP_GATEWAY_NAME)) . '</h2>';
-                    //echo '<input type="hidden" id="pmpro_checkout_gateway" name="pmpro_checkout_gateway" value="pmp_unuspay_gateway">';
-                    echo esc_html(__('Unuspay', UNUSPAY_PMP_GATEWAY_NAME)) . '<img style="vertical-align:middle" src="' . plugins_url("/images/unuspay.png", __FILE__) . '" border="0" vspace="10" hspace="10" height="43" width="143"><br><br>';
+                    echo '<h2>' . esc_html(esc_html__('Payment method', 'unuspay-crypto-payments-for-paid-memberships-pro')) . '</h2>';
+                    echo esc_html(esc_html__('Unuspay', 'unuspay-crypto-payments-for-paid-memberships-pro')) . '<img style="vertical-align:middle" src="' . esc_url(plugins_url("/assets/images/unuspay.png", __FILE__)) . '" border="0" vspace="10" hspace="10" height="43" width="143"><br><br>';
                     return true;
                 }
 
@@ -346,28 +280,12 @@ if (!function_exists('unuspay_pmp_gateway_load'))
             }
 
 
-            public static function pmpro_pages_shortcode_confirmation($content)
+          /*   public static function pmpro_pages_shortcode_confirmation($content)
             {
                 global $wpdb;
-
-               /*  if (!session_id()) session_start();
-
-                if (!isset($_SESSION['unuspay_pmp_orderid'])) return $content;
-
-                $order = new MemberOrder();
-                $order->getMemberOrderByID($_SESSION['unuspay_pmp_orderid']);
-
-                if (!empty($order) && $order->gateway == "unuspay" && isset($order->total) && $order->total > 0 && $order->user_id == get_current_user_id())
-                {
-                    unset($_SESSION['unuspay_pmp_orderid']);
-                    self::pmpro_unuspay_cryptocoin_payment($order);
-                    
-                }else{
-
-                    return $content;
-                } */
+ 
                 return $content;
-            }
+            } */
 
             public function process(&$order)
             {
@@ -406,11 +324,7 @@ if (!function_exists('unuspay_pmp_gateway_load'))
                 }
                 
                 $accept = self::getUnusPayOrder($order,$pmpro_currency);
-                /*$accept= array(
-                    'name' => 'John',
-                    'age' => 30,
-                    'city' => 'New York'
-                );*/
+                
                 $result = $wpdb->insert("{$wpdb->prefix}pmp_unuspay_checkouts", array(
                     'id' => $accept->id,
                     'order_id' => $order->id,
@@ -420,10 +334,9 @@ if (!function_exists('unuspay_pmp_gateway_load'))
                 if (false === $result) {
                     $error_message = $wpdb->last_error;
 
-                    throw new Exception('Storing checkout failed: ' . $error_message);
+                    throw new Exception('Storing checkout failed: ' . esc_html($error_message));
                 }
-                //$confirmation_page_id = pmpro_getOption("confirmation_page_id");
-                //$checkout_url = get_permalink($confirmation_page_id);
+               
                 $redirect_url = "Location: " .   '#pmp-unuspay-checkout-' . $accept->id . '@' . time();
                 header($redirect_url);
                 die();
@@ -446,7 +359,6 @@ if (!function_exists('unuspay_pmp_gateway_load'))
 
                 $payment_key = pmpro_getOption("unuspay_payment_key");
                 if (empty($payment_key)) {
-                    unuspay_edd_log_error('No payment key found!');
                     throw new Exception('No payment key found!');
                 }
 
@@ -470,12 +382,10 @@ if (!function_exists('unuspay_pmp_gateway_load'))
                 $post_response_code = $post_response['response']['code'];
                 $post_response_successful = !is_wp_error($post_response_code) && $post_response_code == 200 ;
                 if (!$post_response_successful) {
-                    unuspay_edd_log_error('ecommerce order failed!' . $post_response->get_error_message());
                     throw new Exception('request failed!');
                 }
                 $post_response_json = json_decode($post_response['body']);
                 if ($post_response_json->code != 200) {
-                    unuspay_edd_log_error('ecommerce order failed!' . $post_response->get_error_message());
                     throw new Exception('request failed!');
                 }
 
@@ -508,24 +418,7 @@ if (!function_exists('unuspay_pmp_gateway_load'))
                 return [];
             }
 
-            public static function callback_parse_request()
-            {
-                if (!session_id())
-                {
-                    session_start();
-                }
-
-                ob_start();
-
-                include_once(plugin_dir_path(__FILE__) . "includes/unuspay.pmp.callback.php");
-
-                if (ob_get_level() > 0)
-                {
-                    ob_flush();
-                }
-
-                return true;
-            }
+           
 
 			public static function pmpro_checkout_before_change_membership_level($user_id, $order)
             {
@@ -876,8 +769,12 @@ function check_pmp_release($request)
 
 function order_success($order){
     global $wpdb;
-    $pmpro_level = $wpdb->get_row("SELECT * FROM $wpdb->pmpro_membership_levels WHERE id = '" . (int)$order->membership_id . "' LIMIT 1");
-
+    $pmpro_level = $wpdb->get_row(
+        $wpdb->prepare(
+            "SELECT * FROM $wpdb->pmpro_membership_levels WHERE id = %d LIMIT 1",
+            $order->membership_id
+        )
+    );
     $user_id = $order->user_id;
 
     $old_startdate = current_time('timestamp');
@@ -895,8 +792,8 @@ function order_success($order){
                 }
             }
 
-    $startdate = "'" . date("Y-m-d H:i:s", $old_startdate) . "'";
-    $enddate = (!empty($pmpro_level->expiration_number)) ? "'" . date("Y-m-d H:i:s", strtotime("+ ".$pmpro_level->expiration_number." ".$pmpro_level->expiration_period, $old_enddate)) . "'" : "NULL";
+    $startdate = "'" . gmdate("Y-m-d H:i:s", $old_startdate) . "'";
+    $enddate = (!empty($pmpro_level->expiration_number)) ? "'" . gmdate("Y-m-d H:i:s", strtotime("+ ".$pmpro_level->expiration_number." ".$pmpro_level->expiration_period, $old_enddate)) . "'" : "NULL";
 
     $custom_level = array(
         'user_id' => $user_id,
@@ -1012,13 +909,13 @@ function pmp_custom_scripts()
 {
     // 仅在 EDD 结账页面加载
     //if (pmp_is_checkout()) {
-    wp_register_script( 'UNUSPAY_PMP_WIDGETS',plugin_dir_url(__FILE__) .'dist/widgets.bundle.js', array(), '1.0', true);
+    wp_register_script( 'UNUSPAY_PMP_WIDGETS',plugin_dir_url(__FILE__) .'assets/js/widgets.bundle.js', array(), '1.0', true);
     wp_enqueue_script( 'UNUSPAY_PMP_WIDGETS' );
 
     // 注册脚本（依赖 jQuery）
     wp_register_script(
         'UNUSPAY_PMP_CHECKOUT',
-        plugin_dir_url(__FILE__) . 'dist/checkout.js', // 脚本路径
+        plugin_dir_url(__FILE__) . 'assets/js/checkout.js', // 脚本路径
         array('wp-api-request', 'jquery'), // 依赖
         '1.0', // 版本号
         true // 在页脚加载
