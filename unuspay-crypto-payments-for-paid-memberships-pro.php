@@ -170,6 +170,7 @@ if (!function_exists('unuspay_pmp_gateway_load'))
                 global $wpdb;
 
                 $options = array(
+                    'currency',
                     'unuspay_payment_key',
                 );
 
@@ -191,7 +192,7 @@ if (!function_exists('unuspay_pmp_gateway_load'))
             {
                 if (empty($gateways['unuspay']))
                 {
-                    $gateways = array_slice($gateways, 0, 1) + array("unuspay" => esc_html__('Unuspay', 'unuspay-crypto-payments-for-paid-memberships-pro')) + array_slice($gateways, 1);
+                    $gateways = array_slice($gateways, 0, 1) + array("unuspay" => esc_html__('UnusPay', 'unuspay-crypto-payments-for-paid-memberships-pro')) + array_slice($gateways, 1);
                 }
 
                 return $gateways;
@@ -230,8 +231,8 @@ if (!function_exists('unuspay_pmp_gateway_load'))
                 if ( $this_plugin === $plugin_file )
                 {
                     $row_meta = [
-				        'dome' => '<a style="color: #39b54a;" href="https://example-wp.unuspay.com/membership-account/membership-checkout/" aria-label="' . esc_attr( esc_html__( 'View Unuspay Demo', 'unuspay-crypto-payments-for-paid-memberships-pro' ) ) . '" target="_blank">' . esc_html__( 'Demo', 'unuspay-crypto-payments-for-paid-memberships-pro' ) . '</a>',
-                        'video' => '<a style="color: #39b54a;" href="https://youtu.be/OCaz-_dbTGA" aria-label="' . esc_attr( esc_html__( 'View Unuspay Video Tutorials', 'unuspay-crypto-payments-for-paid-memberships-pro' ) ) . '" target="_blank">' . esc_html__( 'Video Tutorials', 'unuspay-crypto-payments-for-paid-memberships-pro' ) . '</a>',
+				        'dome' => '<a style="color: #39b54a;" href="https://example-wp.unuspay.com/membership-account/membership-checkout/" aria-label="' . esc_attr( esc_html__( 'View UnusPay Demo', 'unuspay-crypto-payments-for-paid-memberships-pro' ) ) . '" target="_blank">' . esc_html__( 'Demo', 'unuspay-crypto-payments-for-paid-memberships-pro' ) . '</a>',
+                        'video' => '<a style="color: #39b54a;" href="https://youtu.be/OCaz-_dbTGA" aria-label="' . esc_attr( esc_html__( 'View UnusPay Video Tutorials', 'unuspay-crypto-payments-for-paid-memberships-pro' ) ) . '" target="_blank">' . esc_html__( 'Video Tutorials', 'unuspay-crypto-payments-for-paid-memberships-pro' ) . '</a>',
                     ];
 
                     $plugin_meta = array_merge( $plugin_meta, $row_meta );
@@ -242,18 +243,69 @@ if (!function_exists('unuspay_pmp_gateway_load'))
 
             public static function pmpro_payment_option_fields($options, $gateway)
             {
-                global $unuspay, $wpdb;
+                $description="";
+                if (!empty($_REQUEST['page']) && $_REQUEST['page'] == 'pmpro-paymentsettings')
+                {
+                    $api_key = $options["unuspay_payment_key"];
+        
+                        // 如果为空，直接阻止保存
+                    if (!empty($api_key)) {
+                        
+                         
+                        $headers = array(
+                                'Content-Type' => 'application/json; charset=utf-8'
+                            );
+                        $website = get_option("siteurl");
+                        $endpoint = 'https://dapp.unuspay.com/api/plugin/collect';
+                        $response = wp_remote_post( $endpoint,
+                                    array(
+                                        'headers' => $headers,
+                                        'body' => json_encode([
+                                            'website' => $website,
+                                            'paymentKey' => $api_key,
+                                            'platform' => 'edd'
+                                        ]),
+                                        'method' => 'POST',
+                                        'data_format' => 'body'
+                                    )
+                                );
+                                    
 
-                $description  = "<a target='_blank' href='https://unuspay.com/' ><img border='0' src='" . esc_url(plugins_url('/assets/images/unuspay.png', __FILE__)) . "'></a>";
-                $description .= '<p style="margin-top: 10px;"><b>Unuspay official <a href="https://unuspay.com/" target="_blank">website.</a></b></p>';
+                        if (is_wp_error($response)) {
+                         
+                        }
+
+                    
+                        $rspBody = json_decode(wp_remote_retrieve_body($response));
+                        if ($rspBody->code == 404) {
+                            $description = '<p style="color:red"><b>[UnusPay] Invalid Payment Key. Please check and try again.</b></p><p><br></p>';
+
+                       
+                        }
+                        if ($rspBody->code != 200) {
+                          
+                        }
+                    }
+ 
+                }
+                global $unuspay, $wpdb;
+                $aurpay_intro .= '<p style="margin-top: 10px"><b>AURPAY official <a href="https://unuspay.com/" target="_blank">website.</a></b></p>';
+                $aurpay_intro .= '<p style="margin-top: 10px;">UnusPay provides decentralized, trusted crypto payment solutions to thousands of businesses. Scale your operations, increase revenue, and drive conversions in the digital economy.</p>';
+                $aurpay_intro .= '<p style="margin-top: 20px;"><a href="https://dapp.unuspay.com/dashboard/" target="_blank">Get Started</a></p>';
+
+                $description .= "<a target='_blank' href='https://unuspay.com/' ><img border='0' src='" . esc_url(plugins_url('/assets/images/logo_unuspay_2.png', __FILE__)) . "'></a>";
+                $description .= '<p style="margin-top: 10px;"><b>UnusPay official <a href="https://unuspay.com/" target="_blank">website.</a></b></p>';
+                $description .= '<p style="margin-top: 10px;">UnusPay provides decentralized, trusted crypto payment solutions to thousands of businesses. Scale your operations, increase revenue, and drive conversions in the digital economy.</p>';
+                $description .= '<p style="margin-top: 20px;"><a href="https://dapp.unuspay.com/dashboard/" target="_blank">Get Started</a></p>';
+
                  $tr = '<tr class="gateway gateway_unuspay"' . ($gateway != "unuspay" ? ' style="display: none;"' : '') . '>';
                 $tmp  = '<tr class="pmpro_settings_divider gateway gateway_unuspay"' . ($gateway != "unuspay" ? ' style="display: none;"' : '') . '>';
-                $tmp .= '<td colspan="2"><hr/><h2>Unuspay Crypto Payment Gateway Settings</h2></td>';
+                $tmp .= '<td colspan="2"><hr/><h2>UnusPay Crypto Payment Gateway Settings</h2></td>';
                 $tmp .= "</tr>";
                 $tmp .= $tr;
                 $tmp .=  '<td colspan="2"><div style="font-size:13px;line-height:22px">' . $description . '</div></td></tr>';
 
-                $tmp .= $tr .  '<th scope="row" valign="top" style="padding-left:10px"><label for="unuspay_payment_key">Unuspay payment Key:</label></th><td><input  style="width: 320px" type="text" value="' . $options["unuspay_payment_key"] . '" name="unuspay_payment_key" id="unuspay_payment_key"></td></tr>';
+                $tmp .= $tr .  '<th scope="row" valign="top" style="padding-left:10px"><label for="unuspay_payment_key">UnusPay payment Key:</label></th><td><input  style="width: 350px" type="text" value="' . $options["unuspay_payment_key"] . '" name="unuspay_payment_key" id="unuspay_payment_key"></td></tr>';
  
                 
                 echo $tmp;
@@ -272,7 +324,7 @@ if (!function_exists('unuspay_pmp_gateway_load'))
                 if ($setting_gateway == "unuspay")
                 {
                     echo '<h2>' . esc_html(esc_html__('Payment method', 'unuspay-crypto-payments-for-paid-memberships-pro')) . '</h2>';
-                    echo esc_html(esc_html__('Unuspay', 'unuspay-crypto-payments-for-paid-memberships-pro')) . '<img style="vertical-align:middle" src="' . esc_url(plugins_url("/assets/images/unuspay.png", __FILE__)) . '" border="0" vspace="10" hspace="10" height="43" width="143"><br><br>';
+                    echo esc_html(esc_html__('UnusPay', 'unuspay-crypto-payments-for-paid-memberships-pro')) . '<img style="vertical-align:middle" src="' . esc_url(plugins_url("/assets/images/unuspay.png", __FILE__)) . '" border="0" vspace="10" hspace="10" height="43" width="143"><br><br>';
                     return true;
                 }
 
@@ -291,7 +343,7 @@ if (!function_exists('unuspay_pmp_gateway_load'))
             {
                 if (!empty($order) && $order->gateway == "unuspay")
                 {
-                    $order->payment_type = "Unuspay Crypto Payment Gateway";
+                    $order->payment_type = "UnusPay Crypto Payment Gateway";
                     $order->cardtype = "";
                     $order->ProfileStartDate = pmpro_calculate_profile_start_date( $order, 'Y-m-d\TH:i:s\Z' );
                     $order->status = "pending";
@@ -310,7 +362,7 @@ if (!function_exists('unuspay_pmp_gateway_load'))
 
                 if (!$order)
                 {
-                    echo "<div class='pmpro_message pmpro_error'>" . esc_html('The Unuspay payment gateway plugin was invoked to process a payment, but it was unable to fetch the order details. Therefore, the process cannot be carried forward. Please check the errors through the following steps: 1. Check your backend configuration to ensure it is correct. 2. Check your network environment. 3. Contact the Unuspay(contact@unuspay.com) service provider for further assistance.', 'unuspay-pmp') . "</div>";
+                    echo "<div class='pmpro_message pmpro_error'>" . esc_html('The UnusPay payment gateway plugin was invoked to process a payment, but it was unable to fetch the order details. Therefore, the process cannot be carried forward. Please check the errors through the following steps: 1. Check your backend configuration to ensure it is correct. 2. Check your network environment. 3. Contact the UnusPay(contact@unuspay.com) service provider for further assistance.', 'unuspay-pmp') . "</div>";
                     return false;
                 }
                 if ( $order->total == 0)
@@ -319,7 +371,7 @@ if (!function_exists('unuspay_pmp_gateway_load'))
                 }
                 elseif ( $order->total < 0)
                 {
-                    echo "<div class='pmpro_message pmpro_error'>" . esc_html('The Unuspay payment gateway plugin was invoked to process a payment, but it was unable to fetch the order details. Therefore, the process cannot be carried forward. Please check the errors through the following steps: 1. Check your backend configuration to ensure it is correct. 2. Check your network environment. 3. Contact the Unuspay(contact@unuspay.com) service provider for further assistance.', 'unuspay-pmp') . "</div>";
+                    echo "<div class='pmpro_message pmpro_error'>" . esc_html('The UnusPay payment gateway plugin was invoked to process a payment, but it was unable to fetch the order details. Therefore, the process cannot be carried forward. Please check the errors through the following steps: 1. Check your backend configuration to ensure it is correct. 2. Check your network environment. 3. Contact the UnusPay(contact@unuspay.com) service provider for further assistance.', 'unuspay-pmp') . "</div>";
                     return false;
                 }
                 
