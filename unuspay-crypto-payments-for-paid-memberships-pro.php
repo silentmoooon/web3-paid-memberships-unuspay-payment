@@ -17,12 +17,12 @@
 
 if (!defined('ABSPATH')) exit;
 
-if (!function_exists('unuspay_pmp_gateway_load'))
+if (!function_exists('unuscpmp_pmp_gateway_load'))
 {
 
-    add_action('plugins_loaded', 'unuspay_pmp_gateway_load', 20);
+    add_action('plugins_loaded', 'unuscpmp_pmp_gateway_load', 20);
 
-    DEFINE("UNUSPAY_PMP_GATEWAY_NAME", "pmp_unuspay_gateway");
+    DEFINE("UNUSCPMP_PMP_GATEWAY_NAME", "pmp_unuscpmp_gateway");
 
 
     register_activation_hook(__FILE__, 'setup_pmp_plugin');
@@ -30,14 +30,14 @@ if (!function_exists('unuspay_pmp_gateway_load'))
     {
         global $wpdb;
         $latestDbVersion = 5;
-        $currentDbVersion = get_option('unuspay_pmp_db_version');
+        $currentDbVersion = get_option('unuscpmp_db_version');
 
         if (!empty($currentDbVersion) && $currentDbVersion >= $latestDbVersion) {
             return;
         }
         require_once ABSPATH . 'wp-admin/includes/upgrade.php';
         dbDelta("
-		CREATE TABLE  IF NOT EXISTS {$wpdb->prefix}pmp_unuspay_checkouts (
+		CREATE TABLE  IF NOT EXISTS {$wpdb->prefix}pmp_unuscpmp_checkouts (
 			id VARCHAR(36) NOT NULL,
 			order_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
 			accept LONGTEXT NOT NULL,
@@ -46,7 +46,7 @@ if (!function_exists('unuspay_pmp_gateway_load'))
 		);"
         );
         dbDelta("
-        CREATE TABLE  IF NOT EXISTS {$wpdb->prefix}pmp_unuspay_transactions (
+        CREATE TABLE  IF NOT EXISTS {$wpdb->prefix}pmp_unuscpmp_transactions (
         			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
         			order_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
         			checkout_id VARCHAR(36) NOT NULL,
@@ -66,32 +66,32 @@ if (!function_exists('unuspay_pmp_gateway_load'))
         			KEY tracking_uuid_index (tracking_uuid)
         		);
 	");
-        update_option('unuspay_pmp_db_version', $latestDbVersion);
+        update_option('unuscpmp_db_version', $latestDbVersion);
     }
 
  
 
-    function unuspay_pmp_gateway_load()
+    function unuscpmp_pmp_gateway_load()
     {
         if (!class_exists('PMProGateway')) return;
 
-        add_action('init', array('PMProGateway_unuspay', 'init'));
+        add_action('init', array('UnuspayCPMP_Gateway', 'init'));
 
-        //add_filter('pmpro_pages_shortcode_confirmation', array('PMProGateway_unuspay', 'pmpro_pages_shortcode_confirmation'), 20, 1);
+        //add_filter('pmpro_pages_shortcode_confirmation', array('UnuspayCPMP_Gateway', 'pmpro_pages_shortcode_confirmation'), 20, 1);
 
-        add_filter('plugin_action_links', array('PMProGateway_unuspay', 'plugin_action_links'), 10, 2);
+        add_filter('plugin_action_links', array('UnuspayCPMP_Gateway', 'plugin_action_links'), 10, 2);
 
-        add_filter('pmpro_get_gateway', array('PMProGateway_unuspay', 'select_gateway'), 10, 1);
+        //add_filter('pmpro_get_gateway', array('UnuspayCPMP_Gateway', 'select_gateway'), 10, 1);
 
-        add_filter('pmpro_valid_gateways', array('PMProGateway_unuspay', 'valid_gateway'), 10, 1);
+       // add_filter('pmpro_valid_gateways', array('UnuspayCPMP_Gateway', 'valid_gateway'), 10, 1);
 
-        add_action('pmpro_checkout_boxes', array('PMProGateway_unuspay', 'checkout_boxes'));
+        add_action('pmpro_checkout_boxes', array('UnuspayCPMP_Gateway', 'checkout_boxes'));
 
  
 
-		add_filter( 'plugin_row_meta', array('PMProGateway_unuspay', 'plugin_row_meta'), 10, 2 );
+		add_filter( 'plugin_row_meta', array('UnuspayCPMP_Gateway', 'plugin_row_meta'), 10, 2 );
 
-        class PMProGateway_unuspay extends PMProGateway
+        class UnuspayCPMP_Gateway extends PMProGateway
         {
             function __construct($gateway = NULL)
             {
@@ -101,18 +101,18 @@ if (!function_exists('unuspay_pmp_gateway_load'))
 
             public static function init()
             {
-                add_filter('pmpro_gateways', array('PMProGateway_unuspay', 'pmpro_gateways'));
+                add_filter('pmpro_gateways', array('UnuspayCPMP_Gateway', 'pmpro_gateways'));
 
-                add_filter('pmpro_payment_options', array('PMProGateway_unuspay', 'pmpro_payment_options'));
-                add_filter('pmpro_payment_option_fields', array('PMProGateway_unuspay', 'pmpro_payment_option_fields'), 10, 2);
+                add_filter('pmpro_payment_options', array('UnuspayCPMP_Gateway', 'pmpro_payment_options'));
+                add_filter('pmpro_payment_option_fields', array('UnuspayCPMP_Gateway', 'pmpro_payment_option_fields'), 10, 2);
 
                 $gateway = pmpro_getGateway();
                 if ($gateway == "unuspay")
                 {
                     add_filter('pmpro_include_billing_address_fields', '__return_false');
                     add_filter('pmpro_include_payment_information_fields', '__return_false');
-                    add_filter('pmpro_required_billing_fields', array('PMProGateway_unuspay', 'pmpro_required_billing_fields'));
-					add_filter('pmpro_checkout_before_change_membership_level', array('PMProGateway_unuspay', 'pmpro_checkout_before_change_membership_level'), 1, 2);
+                    add_filter('pmpro_required_billing_fields', array('UnuspayCPMP_Gateway', 'pmpro_required_billing_fields'));
+					add_filter('pmpro_checkout_before_change_membership_level', array('UnuspayCPMP_Gateway', 'pmpro_checkout_before_change_membership_level'), 1, 2);
                 }
             }
 
@@ -140,13 +140,13 @@ if (!function_exists('unuspay_pmp_gateway_load'))
 
                 if (isset($_POST['gateway']))
                 {
-                    $gateway = $_SESSION['unuspay_pmp_gateway'] = sanitize_text_field(wp_unslash($_POST['gateway']));
+                    $gateway = $_SESSION['unuscpmp_pmp_gateway'] = sanitize_text_field(wp_unslash($_POST['gateway']));
                 }
                 else
                 {
-                    if (isset($_SESSION['unuspay_pmp_gateway']) && $_SESSION['unuspay_pmp_gateway'] == 'unuspay')
+                    if (isset($_SESSION['unuscpmp_pmp_gateway']) && $_SESSION['unuscpmp_pmp_gateway'] == 'unuspay')
                     {
-                        $gateway = sanitize_text_field($_SESSION['unuspay_pmp_gateway']);
+                        $gateway = sanitize_text_field($_SESSION['unuscpmp_pmp_gateway']);
                     }
                 }
 
@@ -171,7 +171,7 @@ if (!function_exists('unuspay_pmp_gateway_load'))
 
                 $options = array(
                     'currency',
-                    'unuspay_payment_key',
+                    'unuscpmp_payment_key',
                 );
 
  
@@ -181,9 +181,9 @@ if (!function_exists('unuspay_pmp_gateway_load'))
 
             public static function pmpro_payment_options($options)
             {
-                $unuspay_options = PMProGateway_unuspay::getGatewayOptions();
+                $unuscpmp_options = UnuspayCPMP_Gateway::getGatewayOptions();
 
-                $options = array_merge($unuspay_options, $options);
+                $options = array_merge($unuscpmp_options, $options);
 
                 return $options;
             }
@@ -246,7 +246,7 @@ if (!function_exists('unuspay_pmp_gateway_load'))
                 $description="";
                 if (!empty($_REQUEST['page']) && $_REQUEST['page'] == 'pmpro-paymentsettings')
                 {
-                    $api_key = $options["unuspay_payment_key"];
+                    $api_key = $options["unuscpmp_payment_key"];
         
                         // 如果为空，直接阻止保存
                     if (!empty($api_key)) {
@@ -288,12 +288,12 @@ if (!function_exists('unuspay_pmp_gateway_load'))
                     }
  
                 }
-                global $unuspay, $wpdb;
+                global $wpdb;
                 $aurpay_intro .= '<p style="margin-top: 10px"><b>AURPAY official <a href="https://unuspay.com/" target="_blank">website.</a></b></p>';
                 $aurpay_intro .= '<p style="margin-top: 10px;">UnusPay provides decentralized, trusted crypto payment solutions to thousands of businesses. Scale your operations, increase revenue, and drive conversions in the digital economy.</p>';
                 $aurpay_intro .= '<p style="margin-top: 20px;"><a href="https://dapp.unuspay.com/dashboard/" target="_blank">Get Started</a></p>';
 
-                $description .= "<a target='_blank' href='https://unuspay.com/' ><img border='0' src='" . esc_url(plugins_url('/assets/images/logo_unuspay_2.png', __FILE__)) . "'></a>";
+                $description .= "<a target='_blank' href='https://unuspay.com/' ><img border='0' src='" . esc_url(plugins_url('/assets/images/logo_unuscpmp_2.png', __FILE__)) . "'></a>";
                 $description .= '<p style="margin-top: 10px;"><b>UnusPay official <a href="https://unuspay.com/" target="_blank">website.</a></b></p>';
                 $description .= '<p style="margin-top: 10px;">UnusPay provides decentralized, trusted crypto payment solutions to thousands of businesses. Scale your operations, increase revenue, and drive conversions in the digital economy.</p>';
                 $description .= '<p style="margin-top: 20px;"><a href="https://dapp.unuspay.com/dashboard/" target="_blank">Get Started</a></p>';
@@ -305,10 +305,10 @@ if (!function_exists('unuspay_pmp_gateway_load'))
                 $tmp .= $tr;
                 $tmp .=  '<td colspan="2"><div style="font-size:13px;line-height:22px">' . $description . '</div></td></tr>';
 
-                $tmp .= $tr .  '<th scope="row" valign="top" style="padding-left:10px"><label for="unuspay_payment_key">UnusPay payment Key:</label></th><td><input  style="width: 350px" type="text" value="' . $options["unuspay_payment_key"] . '" name="unuspay_payment_key" id="unuspay_payment_key"></td></tr>';
+                $tmp .= $tr .  '<th scope="row" valign="top" style="padding-left:10px"><label for="unuscpmp_payment_key">UnusPay payment Key:</label></th><td><input  style="width: 350px" type="text" value="' . $options["unuscpmp_payment_key"] . '" name="unuscpmp_payment_key" id="unuscpmp_payment_key"></td></tr>';
  
                 
-                echo $tmp;
+                echo wp_kses_post($tmp);
 
            
 
@@ -350,13 +350,13 @@ if (!function_exists('unuspay_pmp_gateway_load'))
                     if(empty($order->code)) $order->code = $order->getRandomCode();
                     $order->saveOrder();
                     do_action('pmpro_before_commit_express_checkout', $order);
-                    $_SESSION['unuspay_pmp_orderid'] = $order->id;
+                    $_SESSION['unuscpmp_pmp_orderid'] = $order->id;
                 }
 
                 return true;
             }
 
-            public static function pmpro_unuspay_cryptocoin_payment(&$order)
+            public static function pmpro_unuscpmp_cryptocoin_payment(&$order)
             {
                 global $unuspay, $pmpro_currency, $current_user, $wpdb;
 
@@ -377,7 +377,7 @@ if (!function_exists('unuspay_pmp_gateway_load'))
                 
                 $accept = self::getUnusPayOrder($order,$pmpro_currency);
                 
-                $result = $wpdb->insert("{$wpdb->prefix}pmp_unuspay_checkouts", array(
+                $result = $wpdb->insert("{$wpdb->prefix}pmp_unuscpmp_checkouts", array(
                     'id' => $accept->id,
                     'order_id' => $order->id,
                     'accept' => json_encode($accept),
@@ -389,7 +389,7 @@ if (!function_exists('unuspay_pmp_gateway_load'))
                     throw new Exception('Storing checkout failed: ' . esc_html($error_message));
                 }
                
-                $redirect_url = "Location: " .   '#pmp-unuspay-checkout-' . $accept->id . '@' . time();
+                $redirect_url = "Location: " .   '#pmp-unuscpmp-checkout-' . $accept->id . '@' . time();
                 header($redirect_url);
                 die();
                 
@@ -409,7 +409,7 @@ if (!function_exists('unuspay_pmp_gateway_load'))
 
                 $total = $order->total;
 
-                $payment_key = pmpro_getOption("unuspay_payment_key");
+                $payment_key = pmpro_getOption("unuscpmp_payment_key");
                 if (empty($payment_key)) {
                     throw new Exception('No payment key found!');
                 }
@@ -479,7 +479,7 @@ if (!function_exists('unuspay_pmp_gateway_load'))
                     return true;
                 }
 
-                self::pmpro_unuspay_cryptocoin_payment($order);
+                self::pmpro_unuscpmp_cryptocoin_payment($order);
                 
                 exit;
             }
@@ -540,19 +540,19 @@ function get_pmp_checkout_accept($request)
     $id = $request->get_param('id');
     $accept = $wpdb->get_var(
         $wpdb->prepare(
-            "SELECT accept FROM {$wpdb->prefix}pmp_unuspay_checkouts WHERE id = %s LIMIT 1",
+            "SELECT accept FROM {$wpdb->prefix}pmp_unuscpmp_checkouts WHERE id = %s LIMIT 1",
             $id
         )
     );
     $order_id = $wpdb->get_var(
         $wpdb->prepare(
-            "SELECT order_id FROM {$wpdb->prefix}pmp_unuspay_checkouts WHERE id = %s LIMIT 1",
+            "SELECT order_id FROM {$wpdb->prefix}pmp_unuscpmp_checkouts WHERE id = %s LIMIT 1",
             $id
         )
     );
     $checkout_id = $wpdb->get_var(
         $wpdb->prepare(
-            "SELECT id FROM {$wpdb->prefix}pmp_unuspay_checkouts WHERE id = %s LIMIT 1",
+            "SELECT id FROM {$wpdb->prefix}pmp_unuscpmp_checkouts WHERE id = %s LIMIT 1",
             $id
         )
     );
@@ -583,13 +583,13 @@ function track_pmp_payment($request)
     $id = $jsonBody["orderId"];
     $accept = $wpdb->get_var(
         $wpdb->prepare(
-            "SELECT accept FROM {$wpdb->prefix}pmp_unuspay_checkouts WHERE id = %s LIMIT 1",
+            "SELECT accept FROM {$wpdb->prefix}pmp_unuscpmp_checkouts WHERE id = %s LIMIT 1",
             $id
         )
     );
     $order_id = $wpdb->get_var(
         $wpdb->prepare(
-            "SELECT order_id FROM {$wpdb->prefix}pmp_unuspay_checkouts WHERE id = %s LIMIT 1",
+            "SELECT order_id FROM {$wpdb->prefix}pmp_unuscpmp_checkouts WHERE id = %s LIMIT 1",
             $id
         )
     );
@@ -612,13 +612,13 @@ function track_pmp_payment($request)
     } else { // PAYMENT TRACKING
         $tracking_uuid = $wpdb->get_var(
             $wpdb->prepare(
-                "SELECT tracking_uuid FROM {$wpdb->prefix}wc_unuspay_transactions WHERE checkout_id = %s ORDER BY created_at DESC LIMIT 1",
+                "SELECT tracking_uuid FROM {$wpdb->prefix}wc_unuscpmp_transactions WHERE checkout_id = %s ORDER BY created_at DESC LIMIT 1",
                 $id
             )
         );
         if (empty($tracking_uuid)) {
             $tracking_uuid = wp_generate_uuid4();
-            $result = $wpdb->insert("{$wpdb->prefix}pmp_unuspay_transactions", array(
+            $result = $wpdb->insert("{$wpdb->prefix}pmp_unuscpmp_transactions", array(
                 'order_id' => $order_id,
                 'checkout_id' => $id,
                 'tracking_uuid' => $tracking_uuid,
@@ -640,7 +640,7 @@ function track_pmp_payment($request)
 
     $endpoint = 'https://dapp.unuspay.com/api/payment/pay';
 
-    $jsonBody["callback"] = get_site_url(null, 'wp-json/unuspay/pmp/validate');
+    $jsonBody["callback"] = get_site_url(null, 'wp-json/unuscpmp/pmp/validate');
     $jsonBody["trackingId"] = $tracking_uuid;
     $jsonBody["orderId"] = $id;
 
@@ -673,7 +673,7 @@ function check_pmp_release($request)
     $checkout_id =  $jsonBody["orderId"];
     $existing_transaction_status = $wpdb->get_var(
         $wpdb->prepare(
-            "SELECT status FROM {$wpdb->prefix}pmp_unuspay_transactions WHERE checkout_id = %s ORDER BY created_at DESC LIMIT 1",
+            "SELECT status FROM {$wpdb->prefix}pmp_unuscpmp_transactions WHERE checkout_id = %s ORDER BY created_at DESC LIMIT 1",
             $checkout_id
         )
     );
@@ -681,7 +681,7 @@ function check_pmp_release($request)
     if ('VALIDATING' === $existing_transaction_status) {
         $tracking_uuid = $wpdb->get_var(
             $wpdb->prepare(
-                "SELECT tracking_uuid FROM {$wpdb->prefix}pmp_unuspay_transactions WHERE checkout_id = %s ORDER BY created_at DESC LIMIT 1",
+                "SELECT tracking_uuid FROM {$wpdb->prefix}pmp_unuscpmp_transactions WHERE checkout_id = %s ORDER BY created_at DESC LIMIT 1",
                 $checkout_id
             )
         );
@@ -705,14 +705,14 @@ function check_pmp_release($request)
 
             $order_id = $wpdb->get_var(
                 $wpdb->prepare(
-                    "SELECT order_id FROM {$wpdb->prefix}pmp_unuspay_transactions WHERE tracking_uuid = %s ORDER BY id DESC LIMIT 1",
+                    "SELECT order_id FROM {$wpdb->prefix}pmp_unuscpmp_transactions WHERE tracking_uuid = %s ORDER BY id DESC LIMIT 1",
                     $tracking_uuid
                 )
             );
  
             $expected_transaction = $wpdb->get_var(
                 $wpdb->prepare(
-                    "SELECT transaction_id FROM {$wpdb->prefix}pmp_unuspay_transactions WHERE tracking_uuid = %s ORDER BY id DESC LIMIT 1",
+                    "SELECT transaction_id FROM {$wpdb->prefix}pmp_unuscpmp_transactions WHERE tracking_uuid = %s ORDER BY id DESC LIMIT 1",
                     $tracking_uuid
                 )
             );
@@ -725,7 +725,7 @@ function check_pmp_release($request)
             if ($expected_transaction != $transaction) {
                 $wpdb->query(
                     $wpdb->prepare(
-                        "UPDATE {$wpdb->prefix}pmp_unuspay_transactions SET transaction_id = %s WHERE tracking_uuid = %s",
+                        "UPDATE {$wpdb->prefix}pmp_unuscpmp_transactions SET transaction_id = %s WHERE tracking_uuid = %s",
                         $transaction,
                         $tracking_uuid
                     )
@@ -737,7 +737,7 @@ function check_pmp_release($request)
             ) {
                 $wpdb->query(
                     $wpdb->prepare(
-                        "UPDATE {$wpdb->prefix}pmp_unuspay_transactions SET status = %s, confirmed_at = %s, confirmed_by = %s, failed_reason = NULL WHERE tracking_uuid = %s",
+                        "UPDATE {$wpdb->prefix}pmp_unuscpmp_transactions SET status = %s, confirmed_at = %s, confirmed_by = %s, failed_reason = NULL WHERE tracking_uuid = %s",
                         'SUCCESS',
                         current_time('mysql'),
                         'API',
@@ -751,10 +751,9 @@ function check_pmp_release($request)
                 if (empty($failed_reason)) {
                     $failed_reason = 'MISMATCH';
                 }
-                UnusPay_WC_Payments::log('Validation failed: ' . $failed_reason);
                 $wpdb->query(
                     $wpdb->prepare(
-                        "UPDATE {$wpdb->prefix}pmp_unuspay_transactions SET failed_reason = %s, status = %s, confirmed_by = %s WHERE tracking_uuid = %s",
+                        "UPDATE {$wpdb->prefix}pmp_unuscpmp_transactions SET failed_reason = %s, status = %s, confirmed_by = %s WHERE tracking_uuid = %s",
                         $failed_reason,
                         'FAILED',
                         'API',
@@ -768,7 +767,7 @@ function check_pmp_release($request)
 
     $existing_transaction_status = $wpdb->get_var(
         $wpdb->prepare(
-            "SELECT status FROM {$wpdb->prefix}pmp_unuspay_transactions WHERE checkout_id = %s ORDER BY created_at DESC LIMIT 1",
+            "SELECT status FROM {$wpdb->prefix}pmp_unuscpmp_transactions WHERE checkout_id = %s ORDER BY created_at DESC LIMIT 1",
             $checkout_id
         )
     );
@@ -781,7 +780,7 @@ function check_pmp_release($request)
 
     $order_id = $wpdb->get_var(
         $wpdb->prepare(
-            "SELECT order_id FROM {$wpdb->prefix}pmp_unuspay_transactions WHERE checkout_id = %s ORDER BY id DESC LIMIT 1",
+            "SELECT order_id FROM {$wpdb->prefix}pmp_unuscpmp_transactions WHERE checkout_id = %s ORDER BY id DESC LIMIT 1",
             $checkout_id
         )
     );
@@ -803,7 +802,7 @@ function check_pmp_release($request)
     } else {
         $failed_reason = $wpdb->get_var(
             $wpdb->prepare(
-                "SELECT failed_reason FROM {$wpdb->prefix}pmp_unuspay_transactions WHERE checkout_id = %s ORDER BY id DESC LIMIT 1",
+                "SELECT failed_reason FROM {$wpdb->prefix}pmp_unuscpmp_transactions WHERE checkout_id = %s ORDER BY id DESC LIMIT 1",
                 $checkout_id
             )
         );
@@ -821,12 +820,8 @@ function check_pmp_release($request)
 
 function order_success($order){
     global $wpdb;
-    $pmpro_level = $wpdb->get_row(
-        $wpdb->prepare(
-            "SELECT * FROM $wpdb->pmpro_membership_levels WHERE id = %d LIMIT 1",
-            $order->membership_id
-        )
-    );
+    $table   = esc_sql( $wpdb->pmpro_membership_levels );
+    $pmpro_level =pmpro_getLevel( $order->membership_id );
     $user_id = $order->user_id;
 
     $old_startdate = current_time('timestamp');
@@ -878,20 +873,19 @@ function process_pmp_notify(WP_REST_Request $request)
     $tracking_uuid = $jsonBody['trackingId'];
     $existing_transaction_id = $wpdb->get_var(
         $wpdb->prepare(
-            "SELECT id FROM {$wpdb->prefix}pmp_unuspay_transactions WHERE tracking_uuid = %s ORDER BY id DESC LIMIT 1",
+            "SELECT id FROM {$wpdb->prefix}pmp_unuscpmp_transactions WHERE tracking_uuid = %s ORDER BY id DESC LIMIT 1",
             $tracking_uuid
         )
     );
 
     if (empty($existing_transaction_id)) {
-        UnusPay_WC_Payments::log('Transaction not found for tracking_uuid');
         $response->set_status(404);
         return $response;
     }
 
     $order_id = $wpdb->get_var(
         $wpdb->prepare(
-            "SELECT order_id FROM {$wpdb->prefix}pmp_unuspay_transactions WHERE tracking_uuid = %s ORDER BY id DESC LIMIT 1",
+            "SELECT order_id FROM {$wpdb->prefix}pmp_unuscpmp_transactions WHERE tracking_uuid = %s ORDER BY id DESC LIMIT 1",
             $tracking_uuid
         )
     );
@@ -899,7 +893,7 @@ function process_pmp_notify(WP_REST_Request $request)
     
     $expected_transaction = $wpdb->get_var(
         $wpdb->prepare(
-            "SELECT transaction_id FROM {$wpdb->prefix}pmp_unuspay_transactions WHERE tracking_uuid = %s ORDER BY id DESC LIMIT 1",
+            "SELECT transaction_id FROM {$wpdb->prefix}pmp_unuscpmp_transactions WHERE tracking_uuid = %s ORDER BY id DESC LIMIT 1",
             $tracking_uuid
         )
     );
@@ -910,7 +904,7 @@ function process_pmp_notify(WP_REST_Request $request)
     if ($expected_transaction != $transaction) {
         $wpdb->query(
             $wpdb->prepare(
-                "UPDATE {$wpdb->prefix}pmp_unuspay_transactions SET transaction_id = %s WHERE tracking_uuid = %s",
+                "UPDATE {$wpdb->prefix}pmp_unuscpmp_transactions SET transaction_id = %s WHERE tracking_uuid = %s",
                 $transaction,
                 $tracking_uuid
             )
@@ -922,7 +916,7 @@ function process_pmp_notify(WP_REST_Request $request)
     ) {
         $wpdb->query(
             $wpdb->prepare(
-                "UPDATE {$wpdb->prefix}pmp_unuspay_transactions SET status = %s, confirmed_at = %s, confirmed_by = %s, failed_reason = NULL WHERE tracking_uuid = %s",
+                "UPDATE {$wpdb->prefix}pmp_unuscpmp_transactions SET status = %s, confirmed_at = %s, confirmed_by = %s, failed_reason = NULL WHERE tracking_uuid = %s",
                 'SUCCESS',
                 current_time('mysql'),
                 'API',
@@ -938,10 +932,9 @@ function process_pmp_notify(WP_REST_Request $request)
         if (empty($failed_reason)) {
             $failed_reason = 'MISMATCH';
         }
-        UnusPay_WC_Payments::log('Validation failed: ' . $failed_reason);
         $wpdb->query(
             $wpdb->prepare(
-                "UPDATE {$wpdb->prefix}pmp_unuspay_transactions SET failed_reason = %s, status = %s, confirmed_by = %s WHERE tracking_uuid = %s",
+                "UPDATE {$wpdb->prefix}pmp_unuscpmp_transactions SET failed_reason = %s, status = %s, confirmed_by = %s WHERE tracking_uuid = %s",
                 $failed_reason,
                 'FAILED',
                 'API',
@@ -961,12 +954,12 @@ function pmp_custom_scripts()
 {
     // 仅在 EDD 结账页面加载
     //if (pmp_is_checkout()) {
-    wp_register_script( 'UNUSPAY_PMP_WIDGETS',plugin_dir_url(__FILE__) .'assets/js/widgets.bundle.js', array(), '1.0', true);
-    wp_enqueue_script( 'UNUSPAY_PMP_WIDGETS' );
+    wp_register_script( 'UNUSCPMP_PMP_WIDGETS',plugin_dir_url(__FILE__) .'assets/js/widgets.bundle.js', array(), '1.0', true);
+    wp_enqueue_script( 'UNUSCPMP_PMP_WIDGETS' );
 
     // 注册脚本（依赖 jQuery）
     wp_register_script(
-        'UNUSPAY_PMP_CHECKOUT',
+        'UNUSCPMP_PMP_CHECKOUT',
         plugin_dir_url(__FILE__) . 'assets/js/checkout.js', // 脚本路径
         array('wp-api-request', 'jquery'), // 依赖
         '1.0', // 版本号
@@ -975,6 +968,6 @@ function pmp_custom_scripts()
 
 
     // 加载脚本
-    wp_enqueue_script('UNUSPAY_PMP_CHECKOUT');
+    wp_enqueue_script('UNUSCPMP_PMP_CHECKOUT');
     //}
 }

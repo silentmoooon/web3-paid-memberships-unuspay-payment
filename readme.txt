@@ -1,21 +1,20 @@
 === UnusPay Crypto Payments For Paid Memberships Pro ===
-Contributors: UnusPay
+Contributors: unustech01
 Tags: web3, payments, Paid Memberships Pro, cryptocurrency
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.2
 Stable tag: 1.0.0
-Requires Plugins: paid-memberships-pro
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
 Accept Web3 payments, supporting various cryptocurrency tokens, blockchains and wallets, with the UnusPay Payments extension for Paid-memberships-pro.
 
-== Source Code ==
+== Development & Source Code ==
 
 The plugin includes minified assets in the /assets/js folder.  
 Source files can be found at:  
-[widgets](https://github.com/unuspay/widgets)
+[widgets.bundle.js](https://github.com/unuscpmp/widgets)
 To build the final production bundle, run:
 git submodule update --init --recursive
 npm install
@@ -24,18 +23,18 @@ npm run build:bundle
 
 == Public REST API Endpoints ==
 
-This plugin registers several public REST API endpoints under the `/wp-json/unuspay/wc/` namespace. These endpoints are intentionally exposed without authentication (`__return_true`) for integration with the UnusPay payment platform. They are safe for public use and designed for communication between the Paid-memberships-pro store and UnusPay.
+This plugin registers several public REST API endpoints under the `/wp-json/unuscpmp/pmp/` namespace. These endpoints are intentionally exposed without authentication (`__return_true`) for integration with the UnusPay payment platform. They are safe for public use and designed for communication between the Paid-memberships-pro store and UnusPay.
 
-- `/wp-json/unuspay/wc/checkouts/{id}`  
+- `/wp-json/unuscpmp/pmp/checkouts/{id}`  
   Used by the user to create a UnusPay order and initiate the payment process.
 
-- `/wp-json/unuspay/wc/track`  
+- `/wp-json/unuscpmp/pmp/track`  
   Used by the user to submit payment results to UnusPay for tracking the payment status.
 
-- `/wp-json/unuspay/wc/release`  
+- `/wp-json/unuscpmp/pmp/release`  
   Used by the user to query the payment status from UnusPay to check whether the transaction has been verified.
 
-- `/wp-json/unuspay/wc/validate`  
+- `/wp-json/unuscpmp/pmp/validate`  
   Called by UnusPay to send a notification after the transaction has been successfully verified.
 
 These endpoints are required for the payment workflow and are meant to be accessible from external clients and the UnusPay server. If needed, additional security mechanisms such as token validation can be implemented on the server side.
@@ -78,7 +77,7 @@ Below are the external endpoints used, along with explanations of what data is s
    - **Privacy Policy**: https://unuspay.com/privacy-policy/
 
 5. **Web3 Wallet Interaction (e.g., MetaMask, WalletConnect, etc.)**  
-    - **Endpoint**: https://verify.walletconnect.com, https://api.mainnet-beta.solana.com, https://usernames.worldcoin.org/api/v1/query etc.
+    - **Endpoint**: https://verify.walletconnect.com, https://api.mainnet-beta.solana.com, https://usernames.worldcoin.org/api/v1/query, https://safe-transaction-{blockchain}.safe.global/api/v1/safes/{address}/all-transactions, https://safe-transaction-{blockchain}/api/v1/multisig-transactions, https://unuspay.com/transactions/worldchain etc.
    - **Purpose**: Allows users to authorize and sign blockchain transactions using their own Web3 wallet.  
    - **Data Sent**: Public wallet address, transaction payload (amount, destination address, gas fees), and digital signature — initiated and approved by the user within their wallet app.  
    - **When**: Triggered when a user clicks “Pay with Web3 Wallet” and confirms the transaction using their browser extension or mobile wallet.  
