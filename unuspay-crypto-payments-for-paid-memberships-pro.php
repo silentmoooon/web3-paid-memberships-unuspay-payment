@@ -451,7 +451,7 @@
                     {
 
                         $id       = $request->get_param('id');
-                        $endpoint = 'https://app.unuspay.com/api/payment/ecommerce/orderInfo?orderId=' . $id;
+                        $endpoint = 'https://dapp.unuspay.com/api/payment/ecommerce/orderInfo?orderId=' . $id;
 
                         $headers = [
                             'Content-Type' => 'application/json; charset=utf-8',
@@ -462,12 +462,13 @@
                                 'headers' => $headers,
                             ]
                         );
-
                         $rspBody = json_decode(wp_remote_retrieve_body($response));
                         if (! is_wp_error($response) && (wp_remote_retrieve_response_code($response) == 200) && $rspBody->code == 200) {
-                            $rsp = rest_ensure_response($$rspBody->data);
+                            $rsp = rest_ensure_response(json_encode($rspBody->data, true));
+                        }else{
+                            $rsp = rest_ensure_response('{}');
                         }
-
+                        $rsp->set_status(200);
                         return $rsp;
                     }
 
