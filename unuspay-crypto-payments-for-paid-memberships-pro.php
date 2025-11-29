@@ -23,7 +23,7 @@
 
         add_action('plugins_loaded', 'unuscpmp_pmp_gateway_load', 20);
 
-        DEFINE("UNUSCPMP_PMP_GATEWAY_NAME", "pmp_unuscpmp_gateway");
+        DEFINE("UNUSPAY_PMP_GATEWAY_NAME", "pmp_unuspay_gateway");
 
         function unuscpmp_pmp_gateway_load()
         {
