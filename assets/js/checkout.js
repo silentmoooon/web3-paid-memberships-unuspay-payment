@@ -15,11 +15,15 @@ jQuery(function ($) {
 
     $("form.pmpro_form").on("submit", async () => {
         var values = $("form.pmpro_form").serialize();
-        if (values.match("pmpro_checkout_gateway=pmp_unuscpmp_gateway")) {
+        console.log(values);
+        if (values.match("gateway=unuspay")) {
+             console.log("111111");
             let { unmount } = await UnusPayWidgets.Loading({
                 text: "Loading payment data...",
             });
             setTimeout(unmount, 10000);
+        }else{
+            console.log("2222");
         }
     });
 });
@@ -32,7 +36,7 @@ const displayCheckout = async () => {
         )[1];
         const response = JSON.parse(
             await wp.apiRequest({
-                path: `/unuscpmp/pmp/checkouts/${checkoutId}`,
+                path: `/unuspay/pmp/checkouts/${checkoutId}`,
                 method: "POST",
             })
         );
@@ -61,9 +65,9 @@ const displayCheckout = async () => {
             },
             track: {
                 id: checkoutId,
-                endpoint: "/wp-json/unuscpmp/pmp/track",
+                endpoint: "/wp-json/unuspay/pmp/track",
                 poll: {
-                    endpoint: "/wp-json/unuscpmp/pmp/release"
+                    endpoint: "/wp-json/unuspay/pmp/release"
                 }
 
             },
