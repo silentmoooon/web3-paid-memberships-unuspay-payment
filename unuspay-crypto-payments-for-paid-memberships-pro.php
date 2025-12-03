@@ -9,7 +9,6 @@
      * Text Domain: unuspay-crypto-payments-for-paid-memberships-pro
      * License: GPL v2 or later
      * License URI: https://www.gnu.org/licenses/gpl-2.0.html
-     * Requires Plugins: paid-memberships-pro
      * Requires at least: 6.0
      * Requires PHP: 7.2
      * Version: 1.0.0
@@ -37,7 +36,7 @@
 
             add_filter('plugin_action_links', ['PMProGateway_unuspay', 'plugin_action_links'], 10, 2);
 
-            add_filter('pmpro_get_gateway', ['PMProGateway_unuspay', 'select_gateway'], 10, 1);
+            //add_filter('pmpro_get_gateway', ['PMProGateway_unuspay', 'select_gateway'], 10, 1);
 
             // add_filter('pmpro_valid_gateways', array('PMProGateway_unuspay', 'valid_gateway'), 10, 1);
 
@@ -85,35 +84,7 @@
                     return $links;
                 }
 
-                public static function select_gateway($gateway)
-                {
-                    if (! session_id()) {
-                        session_start();
-                    }
-
-                    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['unuspay_gateway_nonce'])) {
-                        if (! isset($_POST['unuspay_gateway_nonce']) ||
-                            ! wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['unuspay_gateway_nonce'])), 'unuspay_select_gateway')) {
-                            return $gateway; // nonce 失败，不修改
-                        }
-
-                        if (isset($_POST['gateway'])) {
-                            $gateway = $_SESSION['unuscpmp_pmp_gateway'] = sanitize_text_field(wp_unslash($_POST['gateway']));
-                        } else {
-                            if (isset($_SESSION['unuscpmp_pmp_gateway']) && $_SESSION['unuscpmp_pmp_gateway'] == 'unuspay') {
-                                $gateway = sanitize_text_field($_SESSION['unuscpmp_pmp_gateway']);
-                            }
-                        }
-
-                        return $gateway;
-                    }
-                    // 非提交状态返回 Session 的值
-                    if (isset($_SESSION['unuspay_pmp_gateway'])) {
-                        return sanitize_text_field($_SESSION['unuspay_pmp_gateway']);
-                    }
-
-                    return $gateway;
-                }
+                 
 
                 public static function valid_gateway($gateways)
                 {
@@ -287,7 +258,6 @@
 
                                         $order->saveOrder();
                                         do_action('pmpro_before_commit_express_checkout', $order);
-                                        $_SESSION['unuscpmp_pmp_orderid'] = $order->id;
                                     }
 
                                     return true;
@@ -531,6 +501,9 @@
                         $rspBody = json_decode(wp_remote_retrieve_body($response));
                         if (! is_wp_error($response) && (wp_remote_retrieve_response_code($response) == 200) && $rspBody->code == 200) {
 
+                            $order_id= $rspBody->data->originOrderId;
+                            $status = $rspBody->data->status;
+
                             $order = new MemberOrder();
                             $order->getMemberOrderByID($order_id);
                             if ($order->status === 'success') {
@@ -546,8 +519,7 @@
                                 return $response;
                             }
 
-                            $status = $rspBody->data->status;
-
+                            
                             if (
                                 'success' === $status
                             ) {

@@ -14,7 +14,7 @@ Accept Web3 payments, supporting various cryptocurrency tokens, blockchains and 
 
 The plugin includes minified assets in the /assets/js folder.  
 Source files can be found at:  
-[widgets.bundle.js](https://github.com/unuscpmp/widgets)
+[widgets.bundle.js](https://github.com/unuspay/widgets)
 To build the final production bundle, run:
 git submodule update --init --recursive
 npm install
@@ -23,18 +23,18 @@ npm run build:bundle
 
 == Public REST API Endpoints ==
 
-This plugin registers several public REST API endpoints under the `/wp-json/unuscpmp/pmp/` namespace. These endpoints are intentionally exposed without authentication (`__return_true`) for integration with the UnusPay payment platform. They are safe for public use and designed for communication between the Paid-memberships-pro store and UnusPay.
+This plugin registers several public REST API endpoints under the `/wp-json/unuspay/pmp/` namespace. These endpoints are intentionally exposed without authentication (`__return_true`) for integration with the UnusPay payment platform. They are safe for public use and designed for communication between the Paid-memberships-pro store and UnusPay.
 
-- `/wp-json/unuscpmp/pmp/checkouts/{id}`  
+- `/wp-json/unuspay/pmp/checkouts/{id}`  
   Used by the user to create a UnusPay order and initiate the payment process.
 
-- `/wp-json/unuscpmp/pmp/track`  
+- `/wp-json/unuspay/pmp/track`  
   Used by the user to submit payment results to UnusPay for tracking the payment status.
 
-- `/wp-json/unuscpmp/pmp/release`  
+- `/wp-json/unuspay/pmp/release`  
   Used by the user to query the payment status from UnusPay to check whether the transaction has been verified.
 
-- `/wp-json/unuscpmp/pmp/validate`  
+- `/wp-json/unuspay/pmp/validate`  
   Called by UnusPay to send a notification after the transaction has been successfully verified.
 
 These endpoints are required for the payment workflow and are meant to be accessible from external clients and the UnusPay server. If needed, additional security mechanisms such as token validation can be implemented on the server side.
@@ -77,15 +77,23 @@ Below are the external endpoints used, along with explanations of what data is s
    - **Privacy Policy**: https://unuspay.com/privacy-policy/
 
 5. **Web3 Wallet Interaction (e.g., MetaMask, WalletConnect, etc.)**  
-    - **Endpoint**: https://verify.walletconnect.com, https://api.mainnet-beta.solana.com, https://usernames.worldcoin.org/api/v1/query, https://safe-transaction-{blockchain}.safe.global/api/v1/safes/{address}/all-transactions, https://safe-transaction-{blockchain}/api/v1/multisig-transactions, https://unuspay.com/transactions/worldchain etc.
+    - **Endpoint**: https://verify.walletconnect.com, https://api.mainnet-beta.solana.com, https://usernames.worldcoin.org/api/v1/query, https://safe-transaction-{blockchain}.safe.global/api/v1/safes/{address}/all-transactions, https://safe-transaction-{blockchain}.safe.global/api/v1/multisig-transactions, https://unuspay.com/transactions/worldchain etc.
    - **Purpose**: Allows users to authorize and sign blockchain transactions using their own Web3 wallet.  
    - **Data Sent**: Public wallet address, transaction payload (amount, destination address, gas fees), and digital signature — initiated and approved by the user within their wallet app.  
    - **When**: Triggered when a user clicks “Pay with Web3 Wallet” and confirms the transaction using their browser extension or mobile wallet.  
    - **Note**: These actions are handled entirely by the user's wallet and blockchain network. This plugin does not collect or transmit private keys.  
+
+   -**Terms of Service**:
+     - MetaMask: https://consensys.io/terms-of-use
+     - WalletConnect: https://walletconnect.com/terms
+     - Ethereum: https://ethereum.org/terms-of-use/
+     - Safe.global: https://app.safe.global/terms
+
    - **Privacy Policies of common providers**:  
      - MetaMask: https://consensys.net/privacy-policy/  
      - WalletConnect: https://walletconnect.com/privacy-policy/  
      - Ethereum: https://ethereum.org/en/privacy-policy/
+     - Safe.global: https://app.safe.global/privacy
 
 6. **UnusPay Token Logo API**  
    - **Endpoint**: https://dapp.unuspay.com/images/${blockchain}/${address}/logo.png  
